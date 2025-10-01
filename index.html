@@ -3,117 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificador Hombre-Máquina</title>
+    <title>Planificador Hombre-Máquina Avanzado</title>
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #f4f7f9;
+            --container-bg: #ffffff;
+            --border-color: #ddd;
+            --header-bg: #ecf0f1;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f4f7f9;
-            color: #333;
+            padding: 15px;
+            background-color: var(--background-color);
+            color: var(--secondary-color);
         }
-
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: auto;
-            background-color: white;
+            background-color: var(--container-bg);
             padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
         }
-
         h1 {
             text-align: center;
-            color: #2c3e50;
             margin-bottom: 25px;
         }
-
-        .controls, .custom-action-creator {
+        .config-panel, .actions-panel, .io-panel, #summary {
+            background-color: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .control-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-bottom: 20px;
             align-items: center;
         }
-
-        button, input[type="text"] {
+        button, input {
             padding: 10px 15px;
-            border: none;
             border-radius: 5px;
             font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+        button {
             cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
             transition: all 0.2s ease-in-out;
         }
-
-        button {
-            background-color: #3498db;
-            color: white;
-        }
-
         button:hover {
-            opacity: 0.9;
+            opacity: 0.85;
         }
-        
         .action-btn.selected {
-            box-shadow: 0 0 0 3px #3498db, 0 0 15px rgba(52, 152, 219, 0.5);
+            box-shadow: 0 0 0 3px var(--primary-color), 0 0 15px rgba(52, 152, 219, 0.5);
             transform: translateY(-2px);
         }
-
-        input[type="text"] {
-            border: 1px solid #ccc;
-            flex-grow: 1;
+        .danger-btn {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
         }
-
-        .color-picker-container {
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .delete-mode .action-btn:not(.no-delete):hover {
+            background-color: #c0392b !important;
+            animation: shake 0.5s;
         }
-
-        input[type="color"] {
-            width: 40px;
-            height: 40px;
-            border: none;
-            padding: 0;
-            border-radius: 5px;
-            cursor: pointer;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            table-layout: fixed;
         }
-
         th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 1px solid var(--border-color);
+            padding: 8px;
             text-align: center;
-            height: 30px;
+            height: 25px;
+            font-size: 12px;
+            white-space: nowrap;
         }
-
         th {
-            background-color: #ecf0f1;
+            background-color: var(--header-bg);
             font-weight: 600;
         }
-
         tbody td {
             cursor: pointer;
-            transition: background-color 0.1s ease;
         }
-        
-        tbody tr:nth-child(even) {
-            background-color: #fdfdfd;
-        }
-
         td.minute-col {
-            background-color: #ecf0f1;
+            background-color: var(--header-bg);
             font-weight: bold;
             cursor: default;
         }
-
+        #summary h3 { margin-top: 0; }
+        #summary p { margin: 5px 0; }
     </style>
 </head>
 <body>
@@ -121,198 +112,298 @@
 <div class="container">
     <h1>Planificador Hombre-Máquina</h1>
 
-    <div class="controls">
-        <button id="add-machine-btn">+ máquina</button>
-        <div id="custom-actions-container">
-            </div>
+    <div class="config-panel">
+        <div class="control-group">
+            <label for="total-minutes-input">Minutos Totales:</label>
+            <input type="number" id="total-minutes-input" value="60" min="1" max="500">
+            <button id="generate-table-btn">Generar/Reiniciar Tabla</button>
+            <button id="add-machine-btn">+ Máquina</button>
+        </div>
     </div>
     
-    <div class="custom-action-creator">
-        <input type="text" id="action-name-input" placeholder="Nombre de la nueva acción (ej: Espera)">
-        <button id="create-action-btn">Crear Acción</button>
+    <div class="actions-panel">
+        <div class="control-group">
+             <input type="text" id="action-name-input" placeholder="Nombre de nueva acción">
+             <button id="create-action-btn">Crear Acción</button>
+             <button id="delete-mode-btn" class="danger-btn">Activar modo eliminar</button>
+        </div>
+        <div class="control-group" style="margin-top: 15px;">
+            <label for="color-picker">Color de acción:</label>
+            <input type="color" id="color-picker" value="#3498db">
+            <div id="custom-actions-container" class="control-group"></div>
+        </div>
     </div>
-
-    <div class="color-picker-container">
-        <label for="color-picker">Cambiar color del botón seleccionado:</label>
-        <input type="color" id="color-picker" value="#3498db">
-    </div>
+    
+    <div id="summary">
+        <h3>Análisis de Actividad</h3>
+        </div>
 
     <div style="overflow-x:auto;">
         <table id="schedule-table">
             <thead>
                 <tr>
-                    <th style="width: 80px;">Minuto</th>
+                    <th style="width: 60px;">Minuto</th>
                     <th>Hombre</th>
-                    <th>Máquina 1</th>
+                    <th>M1</th>
                 </tr>
             </thead>
-            <tbody>
-                </tbody>
+            <tbody></tbody>
         </table>
     </div>
-</div>
 
+    <div class="io-panel">
+        <div class="control-group">
+            <button id="save-btn">Guardar Diagrama</button>
+            <label for="load-input" class="button-like-label" style="background-color: #2ecc71; border-color: #2ecc71; color: white; padding: 10px 15px; border-radius: 5px; cursor: pointer;">Cargar Diagrama</label>
+            <input type="file" id="load-input" accept=".json" style="display: none;">
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENTOS DEL DOM ---
     const tableBody = document.querySelector('#schedule-table tbody');
     const tableHeadRow = document.querySelector('#schedule-table thead tr');
+    const generateTableBtn = document.getElementById('generate-table-btn');
+    const totalMinutesInput = document.getElementById('total-minutes-input');
     const addMachineBtn = document.getElementById('add-machine-btn');
     const createActionBtn = document.getElementById('create-action-btn');
     const actionNameInput = document.getElementById('action-name-input');
     const customActionsContainer = document.getElementById('custom-actions-container');
     const colorPicker = document.getElementById('color-picker');
+    const deleteModeBtn = document.getElementById('delete-mode-btn');
+    const summaryDiv = document.getElementById('summary');
+    const saveBtn = document.getElementById('save-btn');
+    const loadInput = document.getElementById('load-input');
 
     // --- ESTADO DE LA APLICACIÓN ---
     let machineCount = 1;
-    const totalMinutes = 60;
-    let selectedAction = {
-        name: 'Actividad',
-        color: '#ffffff',
-        buttonEl: null
-    };
+    let totalMinutes = 60;
+    let selectedAction = { buttonEl: null };
+    let isPainting = false;
+    let isDeleteMode = false;
+    let actions = {};
 
-    // --- FUNCIONES ---
+    // --- FUNCIONES PRINCIPALES ---
 
-    /**
-     * Genera un color hexadecimal aleatorio.
-     */
-    const getRandomColor = () => {
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
+    const initializeTable = () => {
+        tableBody.innerHTML = '';
+        tableHeadRow.innerHTML = '<th style="width: 60px;">Minuto</th><th>Hombre</th>';
+        machineCount = 0;
+        addMachineColumn(); // Add M1
+
+        totalMinutes = parseInt(totalMinutesInput.value) || 60;
+        for (let i = 1; i <= totalMinutes; i++) {
+            const row = tableBody.insertRow();
+            const minuteCell = row.insertCell();
+            minuteCell.textContent = i;
+            minuteCell.classList.add('minute-col');
+            for (let j = 0; j < machineCount + 1; j++) {
+                row.insertCell();
+            }
         }
-        return color;
+        updateAnalytics();
     };
 
-    /**
-     * Crea y añade un nuevo botón de acción personalizado.
-     * @param {string} name - El nombre de la acción.
-     * @param {string} color - El color de fondo del botón.
-     */
-    const addActionButton = (name, color) => {
+    const addMachineColumn = () => {
+        machineCount++;
+        const newHeader = document.createElement('th');
+        newHeader.textContent = `M${machineCount}`;
+        tableHeadRow.appendChild(newHeader);
+        for (let i = 0; i < tableBody.rows.length; i++) {
+            tableBody.rows[i].insertCell();
+        }
+        updateAnalytics();
+    };
+
+    const addActionButton = (name, color, isDeletable = true) => {
+        const id = `action-${name.replace(/\s+/g, '-')}-${Date.now()}`;
         const newButton = document.createElement('button');
         newButton.innerText = name;
         newButton.style.backgroundColor = color;
         newButton.classList.add('action-btn');
+        if (!isDeletable) newButton.classList.add('no-delete');
+        newButton.dataset.actionId = id;
+
+        actions[id] = { name, color };
 
         newButton.addEventListener('click', () => {
-            // Deseleccionar el botón anterior
-            if (selectedAction.buttonEl) {
-                selectedAction.buttonEl.classList.remove('selected');
+            if (isDeleteMode && isDeletable) {
+                delete actions[id];
+                newButton.remove();
+                if(selectedAction.buttonEl === newButton) selectedAction = { buttonEl: null };
+                return;
             }
-            
-            // Seleccionar el nuevo botón
-            newButton.classList.add('selected');
-            colorPicker.value = color; // Actualizar el selector de color
 
-            selectedAction = {
-                name: name,
-                color: color,
-                buttonEl: newButton
-            };
+            if (selectedAction.buttonEl) selectedAction.buttonEl.classList.remove('selected');
+            newButton.classList.add('selected');
+            colorPicker.value = color;
+            selectedAction = { name, color, buttonEl: newButton, id };
         });
 
         customActionsContainer.appendChild(newButton);
         return newButton;
     };
 
-
-    /**
-     * Inicializa la tabla con los minutos y las columnas iniciales.
-     */
-    const initializeTable = () => {
-        for (let i = 1; i <= totalMinutes; i++) {
-            const row = tableBody.insertRow();
-            // Celda de Minuto
-            const minuteCell = row.insertCell();
-            minuteCell.textContent = i;
-            minuteCell.classList.add('minute-col');
-
-            // Celda de Hombre
-            row.insertCell();
-            // Celda de Máquina 1
-            row.insertCell();
-        }
+    const paintCell = (cell, action) => {
+        if (!cell || cell.classList.contains('minute-col')) return;
+        cell.style.backgroundColor = action.color;
+        cell.dataset.actionId = action.id;
+        updateAnalytics();
     };
 
-    /**
-     * Añade una nueva columna de máquina a la tabla.
-     */
-    const addMachineColumn = () => {
-        machineCount++;
-        // Añadir al encabezado
-        const newHeader = document.createElement('th');
-        newHeader.textContent = `Máquina ${machineCount}`;
-        tableHeadRow.appendChild(newHeader);
+    const clearCell = (cell) => {
+        if (!cell || cell.classList.contains('minute-col')) return;
+        cell.style.backgroundColor = '';
+        delete cell.dataset.actionId;
+        updateAnalytics();
+    };
 
-        // Añadir a cada fila del cuerpo
-        for (let i = 0; i < tableBody.rows.length; i++) {
-            tableBody.rows[i].insertCell();
+    const updateAnalytics = () => {
+        const headers = Array.from(tableHeadRow.querySelectorAll('th')).slice(1);
+        let summaryHTML = '<h3>Análisis de Actividad</h3>';
+        
+        headers.forEach((header, colIndex) => {
+            let activeCells = 0;
+            for (let i = 0; i < tableBody.rows.length; i++) {
+                const cell = tableBody.rows[i].cells[colIndex + 1];
+                if (cell && cell.style.backgroundColor) {
+                    activeCells++;
+                }
+            }
+            const percentage = totalMinutes > 0 ? ((activeCells / totalMinutes) * 100).toFixed(1) : 0;
+            summaryHTML += `<p><b>${header.textContent}:</b> ${percentage}% de actividad (${activeCells}/${totalMinutes} min)</p>`;
+        });
+        summaryDiv.innerHTML = summaryHTML;
+    };
+
+    const saveDiagram = () => {
+        const gridData = [];
+        for (const row of tableBody.rows) {
+            const rowData = Array.from(row.cells).slice(1).map(cell => cell.dataset.actionId || null);
+            gridData.push(rowData);
         }
+        
+        const state = {
+            machineCount,
+            totalMinutes,
+            actions,
+            gridData
+        };
+
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `diagrama-hombre-maquina-${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const loadDiagram = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const state = JSON.parse(e.target.result);
+            
+            // Restore state
+            totalMinutesInput.value = state.totalMinutes;
+            actions = state.actions;
+
+            // Rebuild UI
+            initializeTable();
+            while (machineCount < state.machineCount) {
+                addMachineColumn();
+            }
+
+            customActionsContainer.innerHTML = '';
+            addActionButton('Borrar', '#ffffff', false); // Re-add clear button
+            Object.values(state.actions).forEach(action => addActionButton(action.name, action.color));
+
+            state.gridData.forEach((rowData, rowIndex) => {
+                rowData.forEach((actionId, colIndex) => {
+                    if (actionId && actions[actionId]) {
+                        const cell = tableBody.rows[rowIndex].cells[colIndex + 1];
+                        paintCell(cell, { ...actions[actionId], id: actionId });
+                    }
+                });
+            });
+            updateAnalytics();
+        };
+        reader.readAsText(file);
     };
 
     // --- EVENT LISTENERS ---
 
-    // Añadir máquina
+    generateTableBtn.addEventListener('click', initializeTable);
     addMachineBtn.addEventListener('click', addMachineColumn);
 
-    // Crear nueva acción personalizada
     createActionBtn.addEventListener('click', () => {
-        const actionName = actionNameInput.value.trim();
-        if (actionName) {
-            addActionButton(actionName, getRandomColor());
-            actionNameInput.value = ''; // Limpiar input
+        const name = actionNameInput.value.trim();
+        if (name && !Object.values(actions).some(a => a.name === name)) {
+            addActionButton(name, colorPicker.value);
+            actionNameInput.value = '';
         } else {
-            alert('Por favor, introduce un nombre para la acción.');
+            alert('El nombre de la acción no puede estar vacío o ya existe.');
         }
     });
 
-    // Permitir crear acción con la tecla "Enter"
-    actionNameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            createActionBtn.click();
+    deleteModeBtn.addEventListener('click', () => {
+        isDeleteMode = !isDeleteMode;
+        document.body.classList.toggle('delete-mode', isDeleteMode);
+        deleteModeBtn.textContent = isDeleteMode ? 'Desactivar modo eliminar' : 'Activar modo eliminar';
+    });
+
+    colorPicker.addEventListener('input', (e) => {
+        if (selectedAction.buttonEl) {
+            const newColor = e.target.value;
+            selectedAction.buttonEl.style.backgroundColor = newColor;
+            selectedAction.color = newColor;
+            actions[selectedAction.id].color = newColor;
         }
     });
 
-    // Pintar celdas de la tabla
-    tableBody.addEventListener('click', (event) => {
-        const target = event.target;
-        // Asegurarse de que se hizo clic en una celda (TD) y no en la columna de minutos
-        if (target.tagName === 'TD' && !target.classList.contains('minute-col')) {
-            // Si la celda ya tiene el color seleccionado, la blanqueamos (borrar)
-            // Usamos toUpperCase() para comparar colores hexadecimales de forma consistente
-            const currentColor = target.style.backgroundColor ? new Option().style.backgroundColor = target.style.backgroundColor : '';
-            const selectedColor = new Option().style.backgroundColor = selectedAction.color;
+    tableBody.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (e.target.tagName === 'TD') clearCell(e.target);
+    });
 
-            if (currentColor.toUpperCase() === selectedColor.toUpperCase()) {
-                target.style.backgroundColor = '';
-                target.title = '';
-            } else if (selectedAction.buttonEl) { // Solo pintar si se ha seleccionado una acción
-                target.style.backgroundColor = selectedAction.color;
-                target.title = selectedAction.name; // Añadir tooltip con el nombre de la acción
+    tableBody.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || !selectedAction.id) return; // Only for left-click and if an action is selected
+        isPainting = true;
+        
+        const cell = e.target;
+        if (cell.tagName === 'TD' && !cell.classList.contains('minute-col')) {
+            const duration = parseInt(prompt("¿Cuántos minutos dura la acción? (Para 1 min, arrastre el ratón)", "1"));
+            if (duration && !isNaN(duration) && duration > 0) {
+                 const startRow = cell.parentElement.rowIndex;
+                 const colIndex = cell.cellIndex;
+                 for (let i = 0; i < duration && (startRow + i) < tableBody.rows.length; i++) {
+                    const targetCell = tableBody.rows[startRow + i].cells[colIndex];
+                    paintCell(targetCell, selectedAction);
+                 }
             }
         }
     });
 
-    // Cambiar color del botón seleccionado
-    colorPicker.addEventListener('input', (event) => {
-        const newColor = event.target.value;
-        if (selectedAction.buttonEl) {
-            selectedAction.buttonEl.style.backgroundColor = newColor;
-            selectedAction.color = newColor;
+    tableBody.addEventListener('mouseover', (e) => {
+        if (isPainting && e.target.tagName === 'TD') {
+            paintCell(e.target, selectedAction);
         }
     });
 
+    window.addEventListener('mouseup', () => {
+        isPainting = false;
+    });
+
+    saveBtn.addEventListener('click', saveDiagram);
+    loadInput.addEventListener('change', loadDiagram);
+
     // --- INICIALIZACIÓN ---
     initializeTable();
-    // Creamos una acción por defecto para "borrar"
-    const clearButton = addActionButton('Borrar', '#ffffff');
-    clearButton.style.border = '1px solid #ccc';
-    clearButton.style.color = '#333';
-
+    addActionButton('Borrar', '#ffffff', false);
 });
 </script>
 
