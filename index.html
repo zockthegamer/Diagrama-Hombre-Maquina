@@ -3,220 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificador de Máquinas</title>
+    <title>Planificador Hombre-Máquina</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
             padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
         h1 {
             text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
         }
 
-        #controls {
-            margin-bottom: 20px;
+        .controls, .custom-action-creator {
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
             align-items: center;
         }
 
-        #addMachineBtn {
-            padding: 8px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            border: 1px solid #007bff;
-            background-color: #007bff;
-            color: white;
+        button, input[type="text"] {
+            padding: 10px 15px;
+            border: none;
             border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
         }
-        #addMachineBtn:hover {
-            background-color: #0056b3;
+
+        button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        .action-btn.selected {
+            box-shadow: 0 0 0 3px #3498db, 0 0 15px rgba(52, 152, 219, 0.5);
+            transform: translateY(-2px);
+        }
+
+        input[type="text"] {
+            border: 1px solid #ccc;
+            flex-grow: 1;
+        }
+
+        .color-picker-container {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            padding: 0;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
         table {
-            border-collapse: collapse;
             width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
             table-layout: fixed;
-            user-select: none; /* Evita la selección de texto al hacer clic */
         }
 
         th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
             text-align: center;
-            height: 20px; /* Altura de fila fija para representar minutos */
+            height: 30px;
         }
 
         th {
-            background-color: #f2f2f2;
-        }
-        
-        /* Estilo para la primera columna de tiempo */
-        td:first-child, th:first-child {
-            background-color: #e9ecef;
-            font-weight: bold;
-            width: 60px; /* Ancho fijo para la columna de tiempo */
+            background-color: #ecf0f1;
+            font-weight: 600;
         }
 
-        /* Estilo para la celda de estado inactivo/espera */
-        .estado-inactivo {
-            background-color: #fce8e6; /* Un rojo muy claro de fondo */
-            background-image: repeating-linear-gradient(
-                45deg,
-                #f7c5c0,
-                #f7c5c0 8px,
-                transparent 8px,
-                transparent 16px
-            );
+        tbody td {
+            cursor: pointer;
+            transition: background-color 0.1s ease;
         }
+        
+        tbody tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        td.minute-col {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            cursor: default;
+        }
+
     </style>
 </head>
 <body>
 
-    <h1>Planificador de Tareas por Minuto</h1>
+<div class="container">
+    <h1>Planificador Hombre-Máquina</h1>
 
-    <div id="controls">
-        <button id="addMachineBtn">+ máquina</button>
+    <div class="controls">
+        <button id="add-machine-btn">+ máquina</button>
+        <div id="custom-actions-container">
+            </div>
+    </div>
+    
+    <div class="custom-action-creator">
+        <input type="text" id="action-name-input" placeholder="Nombre de la nueva acción (ej: Espera)">
+        <button id="create-action-btn">Crear Acción</button>
     </div>
 
-    <table id="scheduleTable">
-        <thead>
-            <tr>
+    <div class="color-picker-container">
+        <label for="color-picker">Cambiar color del botón seleccionado:</label>
+        <input type="color" id="color-picker" value="#3498db">
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table id="schedule-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Minuto</th>
+                    <th>Hombre</th>
+                    <th>Máquina 1</th>
                 </tr>
-        </thead>
-        <tbody>
-            </tbody>
-    </table>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+</div>
 
-    <script>
-        const table = document.getElementById('scheduleTable');
-        const TOTAL_MINUTOS = 60; // Total de filas a generar (ej: 60 minutos)
-        const INITIAL_MACHINES = 2; // Cantidad inicial de máquinas
 
-        /**
-         * Función para crear la tabla inicial al cargar la página
-         */
-        function createInitialGrid() {
-            const thead = table.querySelector('thead tr');
-            const tbody = table.querySelector('tbody');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENTOS DEL DOM ---
+    const tableBody = document.querySelector('#schedule-table tbody');
+    const tableHeadRow = document.querySelector('#schedule-table thead tr');
+    const addMachineBtn = document.getElementById('add-machine-btn');
+    const createActionBtn = document.getElementById('create-action-btn');
+    const actionNameInput = document.getElementById('action-name-input');
+    const customActionsContainer = document.getElementById('custom-actions-container');
+    const colorPicker = document.getElementById('color-picker');
 
-            // 1. Crear encabezados
-            let headers = '<th>Minuto</th>';
-            for (let i = 1; i <= INITIAL_MACHINES; i++) {
-                headers += `<th>Máquina ${i}</th>`;
+    // --- ESTADO DE LA APLICACIÓN ---
+    let machineCount = 1;
+    const totalMinutes = 60;
+    let selectedAction = {
+        name: 'Actividad',
+        color: '#ffffff',
+        buttonEl: null
+    };
+
+    // --- FUNCIONES ---
+
+    /**
+     * Genera un color hexadecimal aleatorio.
+     */
+    const getRandomColor = () => {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    };
+
+    /**
+     * Crea y añade un nuevo botón de acción personalizado.
+     * @param {string} name - El nombre de la acción.
+     * @param {string} color - El color de fondo del botón.
+     */
+    const addActionButton = (name, color) => {
+        const newButton = document.createElement('button');
+        newButton.innerText = name;
+        newButton.style.backgroundColor = color;
+        newButton.classList.add('action-btn');
+
+        newButton.addEventListener('click', () => {
+            // Deseleccionar el botón anterior
+            if (selectedAction.buttonEl) {
+                selectedAction.buttonEl.classList.remove('selected');
             }
-            thead.innerHTML = headers;
+            
+            // Seleccionar el nuevo botón
+            newButton.classList.add('selected');
+            colorPicker.value = color; // Actualizar el selector de color
 
-            // 2. Crear filas de minutos
-            for (let i = 0; i < TOTAL_MINUTOS; i++) {
-                const row = document.createElement('tr');
-                // Añadir celda de tiempo
-                let rowContent = `<td>${i}</td>`;
-                // Añadir celdas para máquinas
-                for (let j = 0; j < INITIAL_MACHINES; j++) {
-                    rowContent += '<td></td>';
-                }
-                row.innerHTML = rowContent;
-                tbody.appendChild(row);
+            selectedAction = {
+                name: name,
+                color: color,
+                buttonEl: newButton
+            };
+        });
+
+        customActionsContainer.appendChild(newButton);
+        return newButton;
+    };
+
+
+    /**
+     * Inicializa la tabla con los minutos y las columnas iniciales.
+     */
+    const initializeTable = () => {
+        for (let i = 1; i <= totalMinutes; i++) {
+            const row = tableBody.insertRow();
+            // Celda de Minuto
+            const minuteCell = row.insertCell();
+            minuteCell.textContent = i;
+            minuteCell.classList.add('minute-col');
+
+            // Celda de Hombre
+            row.insertCell();
+            // Celda de Máquina 1
+            row.insertCell();
+        }
+    };
+
+    /**
+     * Añade una nueva columna de máquina a la tabla.
+     */
+    const addMachineColumn = () => {
+        machineCount++;
+        // Añadir al encabezado
+        const newHeader = document.createElement('th');
+        newHeader.textContent = `Máquina ${machineCount}`;
+        tableHeadRow.appendChild(newHeader);
+
+        // Añadir a cada fila del cuerpo
+        for (let i = 0; i < tableBody.rows.length; i++) {
+            tableBody.rows[i].insertCell();
+        }
+    };
+
+    // --- EVENT LISTENERS ---
+
+    // Añadir máquina
+    addMachineBtn.addEventListener('click', addMachineColumn);
+
+    // Crear nueva acción personalizada
+    createActionBtn.addEventListener('click', () => {
+        const actionName = actionNameInput.value.trim();
+        if (actionName) {
+            addActionButton(actionName, getRandomColor());
+            actionNameInput.value = ''; // Limpiar input
+        } else {
+            alert('Por favor, introduce un nombre para la acción.');
+        }
+    });
+
+    // Permitir crear acción con la tecla "Enter"
+    actionNameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            createActionBtn.click();
+        }
+    });
+
+    // Pintar celdas de la tabla
+    tableBody.addEventListener('click', (event) => {
+        const target = event.target;
+        // Asegurarse de que se hizo clic en una celda (TD) y no en la columna de minutos
+        if (target.tagName === 'TD' && !target.classList.contains('minute-col')) {
+            // Si la celda ya tiene el color seleccionado, la blanqueamos (borrar)
+            // Usamos toUpperCase() para comparar colores hexadecimales de forma consistente
+            const currentColor = target.style.backgroundColor ? new Option().style.backgroundColor = target.style.backgroundColor : '';
+            const selectedColor = new Option().style.backgroundColor = selectedAction.color;
+
+            if (currentColor.toUpperCase() === selectedColor.toUpperCase()) {
+                target.style.backgroundColor = '';
+                target.title = '';
+            } else if (selectedAction.buttonEl) { // Solo pintar si se ha seleccionado una acción
+                target.style.backgroundColor = selectedAction.color;
+                target.title = selectedAction.name; // Añadir tooltip con el nombre de la acción
             }
         }
+    });
 
-        /**
-         * Lógica para el botón "+ máquina"
-         */
-        document.getElementById('addMachineBtn').addEventListener('click', function() {
-            const headerRow = table.querySelector('thead tr');
-            const newMachineNumber = headerRow.cells.length; // El nuevo número es el total de columnas actual
+    // Cambiar color del botón seleccionado
+    colorPicker.addEventListener('input', (event) => {
+        const newColor = event.target.value;
+        if (selectedAction.buttonEl) {
+            selectedAction.buttonEl.style.backgroundColor = newColor;
+            selectedAction.color = newColor;
+        }
+    });
 
-            // Añadir encabezado para la nueva máquina
-            const newHeader = document.createElement('th');
-            newHeader.textContent = `Máquina ${newMachineNumber}`;
-            headerRow.appendChild(newHeader);
+    // --- INICIALIZACIÓN ---
+    initializeTable();
+    // Creamos una acción por defecto para "borrar"
+    const clearButton = addActionButton('Borrar', '#ffffff');
+    clearButton.style.border = '1px solid #ccc';
+    clearButton.style.color = '#333';
 
-            // Añadir una celda vacía en cada fila para la nueva máquina
-            const bodyRows = table.querySelectorAll('tbody tr');
-            bodyRows.forEach(row => {
-                const newCell = document.createElement('td');
-                row.appendChild(newCell);
-            });
-        });
-
-        /**
-         * Lógica principal para manejar los clics en las celdas de la tabla
-         */
-        table.addEventListener('click', function(event) {
-            const clickedCell = event.target;
-
-            // Asegurarse de que se hizo clic en una celda (TD)
-            if (clickedCell.tagName !== 'TD') {
-                return;
-            }
-
-            const colIndex = clickedCell.cellIndex;
-            
-            // IGNORAR clics en la primera columna (la de los minutos)
-            if (colIndex === 0) {
-                return;
-            }
-
-            const rowIndex = clickedCell.parentElement.rowIndex - 1; // -1 para ajustar por el thead
-            const allRows = Array.from(table.querySelectorAll('tbody tr'));
-
-            // LÓGICA DE AUTOCOMPLETAR ESPACIOS VACÍOS
-            // Si la celda está vacía (sin color y sin clase inactivo)
-            if (!clickedCell.style.backgroundColor && !clickedCell.classList.contains('estado-inactivo')) {
-                let prevTaskRow = -1;
-                let nextTaskRow = -1;
-
-                // Buscar hacia arriba la tarea anterior en la misma columna
-                for (let i = rowIndex - 1; i >= 0; i--) {
-                    if (allRows[i].cells[colIndex].style.backgroundColor || allRows[i].cells[colIndex].classList.contains('estado-inactivo')) {
-                        prevTaskRow = i;
-                        break;
-                    }
-                }
-
-                // Buscar hacia abajo la siguiente tarea en la misma columna
-                for (let i = rowIndex + 1; i < allRows.length; i++) {
-                    if (allRows[i].cells[colIndex].style.backgroundColor || allRows[i].cells[colIndex].classList.contains('estado-inactivo')) {
-                        nextTaskRow = i;
-                        break;
-                    }
-                }
-
-                // Si se encontró una tarea antes y una después, rellenamos el hueco
-                if (prevTaskRow !== -1 && nextTaskRow !== -1) {
-                    for (let i = prevTaskRow + 1; i < nextTaskRow; i++) {
-                        allRows[i].cells[colIndex].classList.add('estado-inactivo');
-                        allRows[i].cells[colIndex].style.backgroundColor = ''; // Limpiar color sólido
-                    }
-                    return; // Termina la ejecución aquí
-                }
-            }
-
-            // LÓGICA DE PINTAR HACIA ABAJO
-            const minutos = parseInt(prompt("Ingrese la duración en minutos:", "1"), 10);
-            if (isNaN(minutos) || minutos <= 0) {
-                return; // No hacer nada si la entrada no es válida
-            }
-
-            // Ejemplo de color de acción. Puedes cambiar esto por un selector.
-            const colorDeAccion = 'lightblue';
-
-            for (let i = 0; i < minutos; i++) {
-                const targetRowIndex = rowIndex + i;
-                if (targetRowIndex < allRows.length) { // Verificar que no nos salgamos de la tabla
-                    const cellToPaint = allRows[targetRowIndex].cells[colIndex];
-                    cellToPaint.style.backgroundColor = colorDeAccion;
-                    cellToPaint.classList.remove('estado-inactivo'); // Quitar estilo de inactivo
-                }
-            }
-        });
-
-        // Generar la tabla cuando se carga la página
-        document.addEventListener('DOMContentLoaded', createInitialGrid);
-    </script>
+});
+</script>
 
 </body>
 </html>
