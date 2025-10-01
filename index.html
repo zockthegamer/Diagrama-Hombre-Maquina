@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis de Actividad</title>
+    <title>Diagrama Hombre-Máquina Avanzado</title>
     <style>
         /* --- ESTILOS GENERALES --- */
         :root {
@@ -12,8 +12,8 @@
             --azul-principal: #0d6efd;
             --rojo-peligro: #dc3545;
             --texto-claro: #fff;
+            --gris-oscuro: #6c757d;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--fondo-gris);
@@ -23,7 +23,6 @@
             display: flex;
             justify-content: center;
         }
-
         main {
             width: 100%;
             max-width: 900px;
@@ -32,7 +31,6 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
         h2, h3 {
             border-bottom: 2px solid var(--borde-color);
             padding-bottom: 10px;
@@ -40,122 +38,62 @@
         }
 
         /* --- SECCIONES Y CONTROLES --- */
-        .seccion {
-            margin-bottom: 25px;
-            padding: 20px;
-            border: 1px solid var(--borde-color);
-            border-radius: 5px;
-        }
-        
-        .control-grupo, .accion-grupo {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        
-        input[type="number"], input[type="text"], input[type="color"] {
-            padding: 8px 12px;
-            border: 1px solid var(--borde-color);
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        input#duracionAccion {
-            width: 80px;
-        }
-
-        button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            color: var(--texto-claro);
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        
-        button:hover {
-            opacity: 0.85;
-        }
-
+        .seccion { margin-bottom: 25px; padding: 20px; border: 1px solid var(--borde-color); border-radius: 5px; }
+        .control-grupo, .accion-grupo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        input[type="number"], input[type="text"], input[type="color"] { padding: 8px 12px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 1rem; }
+        input#duracionAccion { width: 80px; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; color: var(--texto-claro); font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.85; }
         .btn-principal { background-color: var(--azul-principal); }
         .btn-rojo { background-color: var(--rojo-peligro); }
-        
-        #acciones-disponibles {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+        .btn-secundario { background-color: var(--gris-oscuro); }
+        #acciones-disponibles { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
 
         /* --- TABLA DE ACTIVIDADES --- */
-        .tabla-contenedor {
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid var(--borde-color);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
-
-        th, td {
-            border: 1px solid var(--borde-color);
-            padding: 5px;
-            min-width: 80px;
-            height: 25px;
-            font-size: 0.9rem;
-        }
-
-        /* CAMBIO: Estilos para el texto dentro de las celdas de acción */
-        td[data-accion] {
-            font-weight: bold;
-            font-size: 0.8em;
-            vertical-align: middle; /* Centra verticalmente el texto */
-        }
-
-        thead th {
-            position: sticky;
-            top: 0;
-            background-color: #e9ecef;
-        }
-        
-        tbody td:first-child {
-            font-weight: bold;
-            background-color: var(--fondo-gris);
-        }
-        
-        td {
-            cursor: pointer;
-        }
-
+        .tabla-contenedor { max-height: 600px; overflow-y: auto; border: 1px solid var(--borde-color); }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { border: 1px solid var(--borde-color); padding: 5px; min-width: 80px; height: 25px; font-size: 0.9rem; }
+        td[data-accion] { font-weight: bold; font-size: 0.8em; vertical-align: middle; }
+        thead th { position: sticky; top: 0; background-color: #e9ecef; }
+        tbody td:first-child { font-weight: bold; background-color: var(--fondo-gris); }
+        td { cursor: pointer; }
         .celda-inactiva {
-            background-image: repeating-linear-gradient(
-                45deg,
-                rgba(220, 53, 69, 0.15),
-                rgba(220, 53, 69, 0.15) 8px,
-                transparent 8px,
-                transparent 16px
-            );
+            background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
+        }
+
+        /* --- NUEVO: ESTILOS PARA EL TOOLTIP --- */
+        #tooltip {
+            position: absolute;
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
     </style>
 </head>
 <body>
+    <div id="tooltip"></div>
 
     <main>
-        <h2>Diagrama de Actividad Hombre-Máquina</h2>
+        <h2>Diagrama Hombre-Máquina Avanzado</h2>
 
         <div class="seccion">
             <h3>Configuración</h3>
             <div class="control-grupo">
                 <label for="minutos">Minutos Totales:</label>
                 <input type="number" id="minutos" value="60">
-                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar Tabla</button>
+                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar</button>
                 <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
+            </div>
+            <div class="control-grupo">
+                 <button id="btnGuardar" class="btn-secundario">💾 Guardar Diagrama</button>
+                 <button id="btnCargar" class="btn-secundario">📂 Cargar Diagrama</button>
+                 <input type="file" id="inputCargar" accept=".json" style="display: none;">
             </div>
         </div>
         
@@ -163,7 +101,7 @@
             <h3>Acciones</h3>
             <div class="accion-grupo">
                 <input type="text" id="nombreAccion" placeholder="Nombre de acción">
-                <input type="number" id="duracionAccion" placeholder="Minutos" min="1" value="1" title="Duración en minutos">
+                <input type="number" id="duracionAccion" placeholder="Min" min="1" value="1" title="Duración en minutos">
                 <input type="color" id="colorAccion" value="#4caf50">
                 <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
                 <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
@@ -173,9 +111,7 @@
 
         <div class="seccion">
             <h3>Análisis de Actividad</h3>
-            <div id="analisis-container">
-                <p>Genera la tabla para ver el análisis.</p>
-            </div>
+            <div id="analisis-container"><p>Genera la tabla para ver el análisis.</p></div>
         </div>
 
         <div class="tabla-contenedor">
@@ -184,230 +120,314 @@
                 <tbody></tbody>
             </table>
         </div>
-
     </main>
 
     <script>
-        // --- ELEMENTOS DEL DOM ---
-        const inputMinutos = document.getElementById('minutos');
-        const btnGenerar = document.getElementById('btnGenerar');
-        const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
-        const inputNombreAccion = document.getElementById('nombreAccion');
-        const inputDuracionAccion = document.getElementById('duracionAccion');
-        const inputColorAccion = document.getElementById('colorAccion');
-        const btnCrearAccion = document.getElementById('btnCrearAccion');
-        const btnModoEliminar = document.getElementById('btnModoEliminar');
-        const divAcciones = document.getElementById('acciones-disponibles');
-        const divAnalisis = document.getElementById('analisis-container');
-        const tabla = document.getElementById('tabla-actividades');
-        const thead = tabla.querySelector('thead');
-        const tbody = tabla.querySelector('tbody');
+    // --- ELEMENTOS DEL DOM ---
+    const tooltip = document.getElementById('tooltip');
+    const inputMinutos = document.getElementById('minutos');
+    const btnGenerar = document.getElementById('btnGenerar');
+    const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
+    const inputNombreAccion = document.getElementById('nombreAccion');
+    const inputDuracionAccion = document.getElementById('duracionAccion');
+    const inputColorAccion = document.getElementById('colorAccion');
+    const btnCrearAccion = document.getElementById('btnCrearAccion');
+    const btnModoEliminar = document.getElementById('btnModoEliminar');
+    const divAcciones = document.getElementById('acciones-disponibles');
+    const divAnalisis = document.getElementById('analisis-container');
+    const tabla = document.getElementById('tabla-actividades');
+    const thead = tabla.querySelector('thead');
+    const tbody = tabla.querySelector('tbody');
+    const btnGuardar = document.getElementById('btnGuardar');
+    const btnCargar = document.getElementById('btnCargar');
+    const inputCargar = document.getElementById('inputCargar');
 
-        // --- ESTADO DE LA APLICACIÓN ---
-        let columnas = ['Hombre'];
-        let acciones = [];
-        let accionActual = null;
-        let modoEliminar = false;
+    // --- ESTADO DE LA APLICACIÓN ---
+    let columnas = ['Hombre'];
+    let acciones = [];
+    let accionActual = null;
+    let modoEliminar = false;
 
-        // --- FUNCIONES ---
+    // --- FUNCIONES ---
 
-        function generarTabla() {
-            // ... (Sin cambios)
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-            const minutosTotales = parseInt(inputMinutos.value) || 0;
-            if (minutosTotales <= 0) return;
-            const filaCabecera = document.createElement('tr');
-            filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
-            thead.appendChild(filaCabecera);
-            for (let i = 1; i <= minutosTotales; i++) {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
-                tbody.appendChild(fila);
-            }
-            actualizarAnalisis();
+    function generarTabla() { /* ... (Sin cambios) ... */
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        const minutosTotales = parseInt(inputMinutos.value) || 0;
+        if (minutosTotales <= 0) return;
+        const filaCabecera = document.createElement('tr');
+        filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
+        thead.appendChild(filaCabecera);
+        for (let i = 1; i <= minutosTotales; i++) {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
+            tbody.appendChild(fila);
         }
+        actualizarAnalisis();
+    }
 
-        function actualizarAnalisis() {
-            // ... (Sin cambios)
-            divAnalisis.innerHTML = '';
-            const minutosTotales = parseInt(inputMinutos.value) || 0;
-            if (minutosTotales === 0) {
-                divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
-                return;
-            }
-            columnas.forEach((nombre, indiceColumna) => {
-                let celdasActivas = 0;
-                for (const fila of tbody.rows) {
-                    if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
-                        celdasActivas++;
-                    }
-                }
-                const porcentaje = (celdasActivas / minutosTotales) * 100;
-                const p = document.createElement('p');
-                p.textContent = `${nombre}: ${porcentaje.toFixed(1)}% de actividad (${celdasActivas}/${minutosTotales} min)`;
-                divAnalisis.appendChild(p);
-            });
+    /**
+     * CAMBIO: El análisis ahora incluye el tiempo ocioso.
+     */
+    function actualizarAnalisis() {
+        divAnalisis.innerHTML = '';
+        const minutosTotales = parseInt(inputMinutos.value) || 0;
+        if (minutosTotales === 0) {
+            divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
+            return;
         }
-        
-        function crearNuevaAccion(nombre, duracion, color) {
-            // ... (Sin cambios)
-            if (!nombre) {
-                alert('Por favor, introduce un nombre para la acción.');
-                return;
-            }
-            const nuevaAccion = { nombre, duracion, color };
-            acciones.push(nuevaAccion);
-            const btnAccion = document.createElement('button');
-            btnAccion.textContent = `${nombre} (${duracion}m)`;
-            btnAccion.style.backgroundColor = color;
-            btnAccion.style.border = '2px solid transparent';
-            btnAccion.addEventListener('click', () => {
-                if (modoEliminar) {
-                    if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"? Se borrarán todas sus entradas en la tabla.`)) {
-                        eliminarAccion(nuevaAccion, btnAccion);
-                    }
-                } else {
-                    accionActual = nuevaAccion;
-                    document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
-                    btnAccion.style.borderColor = '#000';
-                }
-            });
-            divAcciones.appendChild(btnAccion);
-            inputNombreAccion.value = '';
-            inputDuracionAccion.value = '1';
-        }
-
-        function agregarMaquina() {
-             // ... (Sin cambios)
-             const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
-            if (nombreMaquina && !columnas.includes(nombreMaquina)) {
-                columnas.push(nombreMaquina);
-                generarTabla();
-            } else if (columnas.includes(nombreMaquina)) {
-                alert("Ese nombre ya existe.");
-            }
-        }
-        
-        function eliminarAccion(accionAEliminar, botonAEliminar) {
-            // CAMBIO: Se asegura de limpiar también el texto de la celda.
+        columnas.forEach((nombre, indiceColumna) => {
+            let celdasActivas = 0;
             for (const fila of tbody.rows) {
-                for (const celda of fila.cells) {
-                    if (celda.dataset.accion === accionAEliminar.nombre) {
-                        celda.className = 'celda-inactiva';
-                        celda.style.backgroundColor = '';
-                        celda.style.color = '';
-                        celda.textContent = ''; // Limpiar texto
-                        delete celda.dataset.accion;
-                    }
+                if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
+                    celdasActivas++;
                 }
             }
-            acciones = acciones.filter(a => a.nombre !== accionAEliminar.nombre);
-            botonAEliminar.remove();
-            if (accionActual && accionActual.nombre === accionAEliminar.nombre) {
-                accionActual = null;
-            }
-            actualizarAnalisis();
-        }
+            const tiempoOcioso = minutosTotales - celdasActivas;
+            const porcActividad = (celdasActivas / minutosTotales) * 100;
+            const porcOcioso = (tiempoOcioso / minutosTotales) * 100;
 
-        /**
-         * NUEVO: Función para obtener un color de texto (blanco o negro) que contraste con un color de fondo.
-         */
-        function getContrastingTextColor(hexColor) {
-            if (hexColor.startsWith('#')) {
-                hexColor = hexColor.slice(1);
-            }
-            const r = parseInt(hexColor.substr(0, 2), 16);
-            const g = parseInt(hexColor.substr(2, 2), 16);
-            const b = parseInt(hexColor.substr(4, 2), 16);
-            // Fórmula para determinar la "luminosidad" de un color
-            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-            return (yiq >= 128) ? 'black' : 'white';
+            const p = document.createElement('p');
+            p.innerHTML = `<b>${nombre}:</b> ${porcActividad.toFixed(1)}% Actividad (${celdasActivas} min) | <span style="color: #dc3545;">${porcOcioso.toFixed(1)}% Ocioso (${tiempoOcioso} min)</span>`;
+            divAnalisis.appendChild(p);
+        });
+    }
+    
+    function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) {
+        if (!nombre) {
+            alert('Por favor, introduce un nombre para la acción.');
+            return;
         }
-
-        // --- MANEJADOR DE EVENTOS DE LA TABLA ---
+        const nuevaAccion = { nombre, duracion, color };
+        if (!esHerramienta) {
+             acciones.push(nuevaAccion);
+        }
         
-        tabla.addEventListener('click', function(event) {
-            const celda = event.target;
-
-            if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
-            
-            const esInactiva = celda.classList.contains('celda-inactiva');
-            const filas = tbody.rows;
-            const indiceFila = Array.from(filas).indexOf(celda.parentElement);
-            const indiceColumna = celda.cellIndex;
-
-            if (esInactiva) {
-                if (!accionActual) {
-                    alert("Por favor, selecciona o crea una acción primero.");
-                    return;
-                }
-                const duracion = accionActual.duracion || 1;
-                // CAMBIO: Lógica para poner el nombre en la celda del medio.
-                const middleIndex = Math.floor((duracion - 1) / 2);
-                const textColor = getContrastingTextColor(accionActual.color);
-
-                for (let i = 0; i < duracion; i++) {
-                    const filaIndex = indiceFila + i;
-                    if (filaIndex >= filas.length) break;
-                    
-                    const celdaAPintar = filas[filaIndex].cells[indiceColumna];
-                    celdaAPintar.className = '';
-                    celdaAPintar.style.backgroundColor = accionActual.color;
-                    celdaAPintar.style.color = textColor; // Poner color de texto que contraste
-                    celdaAPintar.dataset.accion = accionActual.nombre;
-
-                    // Poner el texto solo en la celda del medio
-                    if (i === middleIndex) {
-                        celdaAPintar.textContent = accionActual.nombre;
-                    } else {
-                        celdaAPintar.textContent = '';
-                    }
+        const btnAccion = document.createElement('button');
+        btnAccion.textContent = esHerramienta ? nombre : `${nombre} (${duracion}m)`;
+        btnAccion.style.backgroundColor = color;
+        btnAccion.style.border = '2px solid transparent';
+        
+        btnAccion.addEventListener('click', () => {
+            if (modoEliminar && !esHerramienta) {
+                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"?`)) {
+                    eliminarAccion(nuevaAccion, btnAccion);
                 }
             } else {
-                // CAMBIO: Limpiar el texto y color de la celda al borrar.
-                celda.className = 'celda-inactiva';
-                celda.style.backgroundColor = '';
-                celda.style.color = '';
-                celda.textContent = ''; // Limpiar texto
-                delete celda.dataset.accion;
-            }
-            actualizarAnalisis();
-        });
-
-        // --- EVENT LISTENERS DE LOS BOTONES ---
-        btnGenerar.addEventListener('click', generarTabla);
-        btnAgregarMaquina.addEventListener('click', agregarMaquina);
-        
-        btnCrearAccion.addEventListener('click', () => {
-            const duracion = parseInt(inputDuracionAccion.value) || 1;
-            crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
-        });
-
-        btnModoEliminar.addEventListener('click', () => {
-            // ... (Sin cambios)
-            modoEliminar = !modoEliminar;
-            if (modoEliminar) {
-                btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
-                btnModoEliminar.style.backgroundColor = '#ffc107';
-                btnModoEliminar.style.color = '#000';
-                alert('Modo Eliminar Activado: Haz clic en una acción para borrarla.');
-            } else {
-                btnModoEliminar.textContent = 'Activar Modo Eliminar';
-                btnModoEliminar.style.backgroundColor = 'var(--rojo-peligro)';
-                btnModoEliminar.style.color = '#fff';
+                accionActual = nuevaAccion;
+                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
+                btnAccion.style.borderColor = '#000';
             }
         });
+        divAcciones.appendChild(btnAccion);
+        if (!esHerramienta) {
+             inputNombreAccion.value = '';
+             inputDuracionAccion.value = '1';
+        }
+    }
 
-        // --- INICIALIZACIÓN DE LA APP ---
-        function inicializar() {
-            crearNuevaAccion('Trabajo', 1, '#0d6efd');
-            crearNuevaAccion('Espera', 1, '#ffc107');
+    function agregarMaquina() { /* ... (Sin cambios) ... */
+        const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
+        if (nombreMaquina && !columnas.includes(nombreMaquina)) {
+            columnas.push(nombreMaquina);
             generarTabla();
-            divAcciones.querySelector('button').click();
+        } else if (columnas.includes(nombreMaquina)) {
+            alert("Ese nombre ya existe.");
         }
+    }
+    
+    function eliminarAccion(accionAEliminar, botonAEliminar) { /* ... (Sin cambios) ... */
+        for (const fila of tbody.rows) {
+            for (const celda of fila.cells) {
+                if (celda.dataset.accion === accionAEliminar.nombre) {
+                    limpiarCelda(celda);
+                }
+            }
+        }
+        acciones = acciones.filter(a => a.nombre !== accionAEliminar.nombre);
+        botonAEliminar.remove();
+        if (accionActual && accionActual.nombre === accionAEliminar.nombre) {
+            accionActual = null;
+        }
+        actualizarAnalisis();
+    }
+
+    function getContrastingTextColor(hexColor) { /* ... (Sin cambios) ... */
+        if (hexColor.startsWith('#')) hexColor = hexColor.slice(1);
+        const r = parseInt(hexColor.substr(0, 2), 16);
+        const g = parseInt(hexColor.substr(2, 2), 16);
+        const b = parseInt(hexColor.substr(4, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? 'black' : 'white';
+    }
+
+    function limpiarCelda(celda) {
+        celda.className = 'celda-inactiva';
+        celda.style.backgroundColor = '';
+        celda.style.color = '';
+        celda.textContent = '';
+        delete celda.dataset.accion;
+    }
+
+    // --- MANEJADORES DE EVENTOS ---
+    
+    tabla.addEventListener('click', function(event) {
+        const celda = event.target;
+        if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
         
-        inicializar();
+        const filas = tbody.rows;
+        const indiceFila = Array.from(filas).indexOf(celda.parentElement);
+        const indiceColumna = celda.cellIndex;
+
+        // Lógica del Borrador
+        if (accionActual && accionActual.nombre === 'Borrador') {
+            limpiarCelda(celda);
+            actualizarAnalisis();
+            return;
+        }
+
+        // Lógica para pintar o limpiar
+        if (celda.classList.contains('celda-inactiva')) {
+            if (!accionActual) {
+                alert("Por favor, selecciona una acción primero.");
+                return;
+            }
+            const duracion = accionActual.duracion || 1;
+            const middleIndex = Math.floor((duracion - 1) / 2);
+            const textColor = getContrastingTextColor(accionActual.color);
+
+            for (let i = 0; i < duracion; i++) {
+                const filaIndex = indiceFila + i;
+                if (filaIndex >= filas.length) break;
+                
+                const celdaAPintar = filas[filaIndex].cells[indiceColumna];
+                celdaAPintar.className = '';
+                celdaAPintar.style.backgroundColor = accionActual.color;
+                celdaAPintar.style.color = textColor;
+                celdaAPintar.dataset.accion = accionActual.nombre;
+                celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
+            }
+        } else {
+            limpiarCelda(celda);
+        }
+        actualizarAnalisis();
+    });
+
+    // NUEVO: Eventos para el tooltip
+    tabla.addEventListener('mouseover', (event) => {
+        if (event.target.tagName === 'TD' && event.target.dataset.accion) {
+            tooltip.textContent = event.target.dataset.accion;
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY + 10}px`;
+            tooltip.style.visibility = 'visible';
+            tooltip.style.opacity = 1;
+        }
+    });
+    tabla.addEventListener('mouseout', () => {
+        tooltip.style.visibility = 'hidden';
+        tooltip.style.opacity = 0;
+    });
+
+    btnGenerar.addEventListener('click', generarTabla);
+    btnAgregarMaquina.addEventListener('click', agregarMaquina);
+    btnCrearAccion.addEventListener('click', () => {
+        const duracion = parseInt(inputDuracionAccion.value) || 1;
+        crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
+    });
+
+    btnModoEliminar.addEventListener('click', () => { /* ... (Sin cambios) ... */
+        modoEliminar = !modoEliminar;
+        if (modoEliminar) {
+            btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
+            btnModoEliminar.style.backgroundColor = '#ffc107';
+            btnModoEliminar.style.color = '#000';
+            alert('Modo Eliminar Activado: Haz clic en una acción para borrarla.');
+        } else {
+            btnModoEliminar.textContent = 'Activar Modo Eliminar';
+            btnModoEliminar.style.backgroundColor = 'var(--rojo-peligro)';
+            btnModoEliminar.style.color = '#fff';
+        }
+    });
+
+    // NUEVO: Lógica para Guardar y Cargar
+    btnGuardar.addEventListener('click', () => {
+        const estado = {
+            columnas: columnas,
+            acciones: acciones,
+            minutosTotales: inputMinutos.value,
+            tablaData: Array.from(tbody.rows).map(fila => 
+                Array.from(fila.cells).slice(1).map(celda => celda.dataset.accion || null)
+            )
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "diagrama-hombre-maquina.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    });
+
+    btnCargar.addEventListener('click', () => inputCargar.click());
+
+    inputCargar.addEventListener('change', (event) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const estadoCargado = JSON.parse(e.target.result);
+            
+            // Recargar estado
+            columnas = estadoCargado.columnas;
+            acciones = estadoCargado.acciones;
+            inputMinutos.value = estadoCargado.minutosTotales;
+
+            // Limpiar y recargar UI de acciones
+            divAcciones.innerHTML = '';
+            inicializarAcciones(); // Vuelve a crear el borrador y las acciones cargadas
+            
+            // Generar tabla y repoblar
+            generarTabla();
+            const filas = tbody.rows;
+            estadoCargado.tablaData.forEach((filaData, indiceFila) => {
+                filaData.forEach((nombreAccion, indiceColumna) => {
+                    if (nombreAccion) {
+                        const accion = acciones.find(a => a.nombre === nombreAccion);
+                        if (accion) {
+                            const celda = filas[indiceFila].cells[indiceColumna + 1];
+                            celda.className = '';
+                            celda.style.backgroundColor = accion.color;
+                            celda.style.color = getContrastingTextColor(accion.color);
+                            celda.dataset.accion = accion.nombre;
+                        }
+                    }
+                });
+            });
+
+            // Repintar nombres en bloques (esto es una simplificación, puede no quedar perfecto en la carga)
+            actualizarAnalisis();
+        };
+        reader.readAsText(event.target.files[0]);
+        inputCargar.value = ''; // Reset para poder cargar el mismo archivo de nuevo
+    });
+    
+    // --- INICIALIZACIÓN DE LA APP ---
+    function inicializarAcciones() {
+        crearNuevaAccion('Borrador', 1, '#6c757d', true); // Crear el Borrador
+        acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
+    }
+
+    function inicializar() {
+        crearNuevaAccion('Trabajo', 1, '#0d6efd');
+        crearNuevaAccion('Espera', 1, '#ffc107');
+        divAcciones.innerHTML = ''; // Limpiar acciones de ejemplo antes de la inicialización final
+        inicializarAcciones();
+        generarTabla();
+        // Seleccionar la primera acción real (no el borrador)
+        if (divAcciones.children[1]) {
+            divAcciones.children[1].click();
+        }
+    }
+    
+    inicializar();
     </script>
 </body>
 </html>
