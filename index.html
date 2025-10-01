@@ -3,391 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis de Actividad</title>
+    <title>Diagrama Bimanual Mejorado</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* --- ESTILOS GENERALES --- */
-        :root {
-            --borde-color: #dee2e6;
-            --fondo-gris: #f8f9fa;
-            --azul-principal: #0d6efd;
-            --rojo-peligro: #dc3545;
-            --texto-claro: #fff;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--fondo-gris);
-            color: #212529;
-            margin: 0;
-            padding: 20px;
+            font-family: sans-serif;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            background-color: #f4f4f9;
         }
-
-        main {
-            width: 100%;
-            max-width: 900px;
+        .container {
+            display: flex;
+            gap: 30px;
+        }
+        .controls {
+            padding: 15px;
             background-color: #fff;
-            padding: 25px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
         }
-
-        h2, h3 {
-            border-bottom: 2px solid var(--borde-color);
-            padding-bottom: 10px;
+        .controls h3 {
             margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
         }
-
-        /* --- SECCIONES Y CONTROLES --- */
-        .seccion {
-            margin-bottom: 25px;
-            padding: 20px;
-            border: 1px solid var(--borde-color);
-            border-radius: 5px;
-        }
-        
-        .control-grupo, .accion-grupo {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
+        .control-group {
             margin-bottom: 15px;
         }
-        
-        input[type="number"], input[type="text"], input[type="color"] {
-            padding: 8px 12px;
-            border: 1px solid var(--borde-color);
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        input#duracionAccion {
-            width: 80px;
-        }
-
-        button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            color: var(--texto-claro);
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            font-size: 0.9em;
         }
-        
-        button:hover {
-            opacity: 0.85;
-        }
-
-        .btn-principal { background-color: var(--azul-principal); }
-        .btn-rojo { background-color: var(--rojo-peligro); }
-        
-        #acciones-disponibles {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        /* --- TABLA DE ACTIVIDADES --- */
-        .tabla-contenedor {
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid var(--borde-color);
-        }
-
-        table {
+        .control-group input, .control-group select {
             width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Importante para que el padding no afecte el ancho */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #btn-export {
+            background-color: #28a745;
+        }
+        #btn-export:hover {
+            background-color: #218838;
+        }
+        table {
             border-collapse: collapse;
-            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background-color: #fff;
         }
-
         th, td {
-            border: 1px solid var(--borde-color);
-            padding: 5px;
-            min-width: 80px;
-            height: 25px;
-            font-size: 0.9rem;
+            border: 1px solid #ccc;
+            width: 50px; /* Ancho fijo para las celdas de tiempo */
+            height: 40px;
+            text-align: center;
+            padding: 0;
+            position: relative; /* Para posicionamiento del texto */
         }
-
-        thead th {
-            position: sticky;
-            top: 0;
+        th {
             background-color: #e9ecef;
         }
-        
-        tbody td:first-child {
+        td.header-cell {
+            background-color: #f8f9fa;
             font-weight: bold;
-            background-color: var(--fondo-gris);
+            width: 100px; /* Ancho para las cabeceras de fila */
         }
-        
-        td {
+        td:not(.header-cell) {
             cursor: pointer;
         }
-
-        .celda-inactiva {
-            background-image: repeating-linear-gradient(
-                45deg,
-                rgba(220, 53, 69, 0.15),
-                rgba(220, 53, 69, 0.15) 8px,
-                transparent 8px,
-                transparent 16px
-            );
+        td:not(.header-cell):hover {
+            background-color: #e0e0e0;
+        }
+        .cell-text {
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            /* Para evitar que el texto se pueda seleccionar */
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
         }
     </style>
 </head>
 <body>
 
-    <main>
-        <h2>Diagrama de Actividad Hombre-Máquina</h2>
-
-        <div class="seccion">
-            <h3>Configuración</h3>
-            <div class="control-grupo">
-                <label for="minutos">Minutos Totales:</label>
-                <input type="number" id="minutos" value="60">
-                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar Tabla</button>
-                <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
-            </div>
+<div class="container">
+    <div class="controls">
+        <h3>Control de Acciones</h3>
+        <div class="control-group">
+            <label for="action-name">Nombre de la Acción:</label>
+            <input type="text" id="action-name" value="Tomar pieza">
         </div>
-        
-        <div class="seccion">
-            <h3>Acciones</h3>
-            <div class="accion-grupo">
-                <input type="text" id="nombreAccion" placeholder="Nombre de acción">
-                <input type="number" id="duracionAccion" placeholder="Minutos" min="1" value="1" title="Duración en minutos">
-                <input type="color" id="colorAccion" value="#4caf50">
-                <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
-                <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
-            </div>
-            <div id="acciones-disponibles"></div>
+        <div class="control-group">
+            <label for="duration">Duración (min):</label>
+            <input type="number" id="duration" value="3" min="1">
         </div>
-
-        <div class="seccion">
-            <h3>Análisis de Actividad</h3>
-            <div id="analisis-container">
-                <p>Genera la tabla para ver el análisis.</p>
-            </div>
+        <div class="control-group">
+            <label for="color">Color:</label>
+            <input type="color" id="color" value="#4CAF50">
         </div>
-
-        <div class="tabla-contenedor">
-            <table id="tabla-actividades">
-                <thead></thead>
-                <tbody></tbody>
-            </table>
+        <div class="control-group">
+            <label for="hand-select">Mano:</label>
+            <select id="hand-select">
+                <option value="left-hand">Mano Izquierda</option>
+                <option value="right-hand">Mano Derecha</option>
+            </select>
         </div>
+        <button id="btn-export">Exportar como Imagen</button>
+    </div>
 
-    </main>
+    <div id="diagram-container">
+        <table id="gantt-table">
+            <thead>
+                <tr>
+                    <th>Mano / Tiempo</th>
+                    </tr>
+            </thead>
+            <tbody>
+                <tr id="left-hand">
+                    <td class="header-cell">Mano Izquierda</td>
+                    </tr>
+                <tr id="right-hand">
+                    <td class="header-cell">Mano Derecha</td>
+                    </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <script>
-        // --- ELEMENTOS DEL DOM ---
-        const inputMinutos = document.getElementById('minutos');
-        const btnGenerar = document.getElementById('btnGenerar');
-        const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
-        const inputNombreAccion = document.getElementById('nombreAccion');
-        const inputDuracionAccion = document.getElementById('duracionAccion');
-        const inputColorAccion = document.getElementById('colorAccion');
-        const btnCrearAccion = document.getElementById('btnCrearAccion');
-        const btnModoEliminar = document.getElementById('btnModoEliminar'); // NUEVO
-        const divAcciones = document.getElementById('acciones-disponibles');
-        const divAnalisis = document.getElementById('analisis-container');
-        const tabla = document.getElementById('tabla-actividades');
-        const thead = tabla.querySelector('thead');
-        const tbody = tabla.querySelector('tbody');
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('gantt-table');
+        const totalMinutes = 30; // Total de minutos en la tabla
 
-        // --- ESTADO DE LA APLICACIÓN ---
-        let columnas = ['Hombre'];
-        let acciones = [];
-        let accionActual = null;
-        let modoEliminar = false; // NUEVO: Flag para el modo de eliminación
+        // --- Generación de la Tabla Dinámica ---
+        const headerRow = table.querySelector('thead tr');
+        const leftHandRow = document.getElementById('left-hand');
+        const rightHandRow = document.getElementById('right-hand');
 
-        // --- FUNCIONES ---
+        for (let i = 1; i <= totalMinutes; i++) {
+            const th = document.createElement('th');
+            th.textContent = i;
+            headerRow.appendChild(th);
 
-        function generarTabla() {
-            // ... (Sin cambios, esta función es correcta)
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-            const minutosTotales = parseInt(inputMinutos.value) || 0;
-            if (minutosTotales <= 0) return;
-            const filaCabecera = document.createElement('tr');
-            filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
-            thead.appendChild(filaCabecera);
-            for (let i = 1; i <= minutosTotales; i++) {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
-                tbody.appendChild(fila);
-            }
-            actualizarAnalisis();
+            const tdLeft = document.createElement('td');
+            tdLeft.dataset.time = i;
+            tdLeft.dataset.hand = 'left-hand';
+            leftHandRow.appendChild(tdLeft);
+
+            const tdRight = document.createElement('td');
+            tdRight.dataset.time = i;
+            tdRight.dataset.hand = 'right-hand';
+            rightHandRow.appendChild(tdRight);
         }
 
-        function actualizarAnalisis() {
-            // ... (Sin cambios, esta función es correcta)
-            divAnalisis.innerHTML = '';
-            const minutosTotales = parseInt(inputMinutos.value) || 0;
-            if (minutosTotales === 0) {
-                divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
-                return;
-            }
-            columnas.forEach((nombre, indiceColumna) => {
-                let celdasActivas = 0;
-                for (const fila of tbody.rows) {
-                    if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
-                        celdasActivas++;
-                    }
+        // --- Lógica para pintar y añadir texto ---
+        table.addEventListener('click', function(e) {
+            if (e.target.tagName === 'TD' && e.target.dataset.time) {
+                const actionName = document.getElementById('action-name').value;
+                const duration = parseInt(document.getElementById('duration').value, 10);
+                const color = document.getElementById('color').value;
+                const selectedHand = document.getElementById('hand-select').value;
+                const startTime = parseInt(e.target.dataset.time, 10);
+                const clickedHand = e.target.dataset.hand;
+
+                // Aplicar solo a la mano seleccionada en el panel de control
+                if (clickedHand === selectedHand) {
+                   paintAction(clickedHand, startTime, duration, actionName, color);
                 }
-                const porcentaje = (celdasActivas / minutosTotales) * 100;
-                const p = document.createElement('p');
-                p.textContent = `${nombre}: ${porcentaje.toFixed(1)}% de actividad (${celdasActivas}/${minutosTotales} min)`;
-                divAnalisis.appendChild(p);
+            }
+        });
+        
+        function paintAction(hand, start, duration, name, color) {
+            const row = document.getElementById(hand);
+            if (!row) return;
+
+            const endTime = start + duration - 1;
+
+            // 1. Limpiar celdas que serán sobreescritas
+            for (let i = start; i <= endTime && i <= totalMinutes; i++) {
+                const cell = row.querySelector(`td[data-time='${i}']`);
+                if (cell) {
+                    cell.style.backgroundColor = ''; // Quita el color
+                    cell.innerHTML = ''; // Limpia cualquier texto anterior
+                }
+            }
+
+            // 2. Pintar las nuevas celdas
+            for (let i = start; i <= endTime && i <= totalMinutes; i++) {
+                const cell = row.querySelector(`td[data-time='${i}']`);
+                if (cell) {
+                    cell.style.backgroundColor = color;
+                }
+            }
+            
+            // 3. Poner el nombre en la casilla del medio
+            const middleTime = start + Math.floor(duration / 2);
+            if (middleTime <= totalMinutes) {
+                const middleCell = row.querySelector(`td[data-time='${middleTime}']`);
+                if (middleCell) {
+                    // Usamos un div para un mejor control del estilo si fuera necesario
+                    middleCell.innerHTML = `<div class="cell-text">${name}</div>`;
+                }
+            }
+        }
+
+        // --- Lógica para exportar la imagen ---
+        const exportButton = document.getElementById('btn-export');
+        exportButton.addEventListener('click', function() {
+            const diagramContainer = document.getElementById('diagram-container');
+            // Usamos la librería html2canvas
+            html2canvas(diagramContainer).then(canvas => {
+                // Crear un enlace temporal para la descarga
+                const link = document.createElement('a');
+                link.download = 'diagrama-bimanual.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click(); // Simula un clic para iniciar la descarga
             });
-        }
-        
-        /**
-         * CAMBIO: El listener del botón de acción ahora comprueba si el modo eliminar está activo.
-         */
-        function crearNuevaAccion(nombre, duracion, color) {
-            if (!nombre) {
-                alert('Por favor, introduce un nombre para la acción.');
-                return;
-            }
-            const nuevaAccion = { nombre, duracion, color };
-            acciones.push(nuevaAccion);
-            
-            const btnAccion = document.createElement('button');
-            btnAccion.textContent = `${nombre} (${duracion}m)`;
-            btnAccion.style.backgroundColor = color;
-            btnAccion.style.border = '2px solid transparent';
-            
-            btnAccion.addEventListener('click', () => {
-                if (modoEliminar) {
-                    // Si el modo eliminar está activo, llama a la función de borrado
-                    if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"? Se borrarán todas sus entradas en la tabla.`)) {
-                        eliminarAccion(nuevaAccion, btnAccion);
-                    }
-                } else {
-                    // Comportamiento normal: seleccionar la acción
-                    accionActual = nuevaAccion;
-                    document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
-                    btnAccion.style.borderColor = '#000';
-                }
-            });
-            
-            divAcciones.appendChild(btnAccion);
-            inputNombreAccion.value = '';
-            inputDuracionAccion.value = '1';
-        }
-
-        function agregarMaquina() {
-            // ... (Sin cambios, esta función es correcta)
-             const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
-            if (nombreMaquina && !columnas.includes(nombreMaquina)) {
-                columnas.push(nombreMaquina);
-                generarTabla();
-            } else if (columnas.includes(nombreMaquina)) {
-                alert("Ese nombre ya existe.");
-            }
-        }
-        
-        /**
-         * NUEVO: Función completa para eliminar una acción.
-         */
-        function eliminarAccion(accionAEliminar, botonAEliminar) {
-            // 1. Limpiar celdas en la tabla que usan esta acción
-            for (const fila of tbody.rows) {
-                for (const celda of fila.cells) {
-                    if (celda.dataset.accion === accionAEliminar.nombre) {
-                        celda.className = 'celda-inactiva';
-                        celda.style.backgroundColor = '';
-                        delete celda.dataset.accion;
-                    }
-                }
-            }
-
-            // 2. Quitar la acción del array de acciones
-            acciones = acciones.filter(a => a.nombre !== accionAEliminar.nombre);
-
-            // 3. Quitar el botón de la UI
-            botonAEliminar.remove();
-
-            // 4. Si la acción eliminada era la actual, deseleccionarla
-            if (accionActual && accionActual.nombre === accionAEliminar.nombre) {
-                accionActual = null;
-            }
-
-            // 5. Actualizar los porcentajes de análisis
-            actualizarAnalisis();
-        }
-
-        // --- MANEJADOR DE EVENTOS DE LA TABLA ---
-        
-        tabla.addEventListener('click', function(event) {
-            const celda = event.target;
-
-            if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
-            
-            const esInactiva = celda.classList.contains('celda-inactiva');
-            const filas = tbody.rows;
-            // CORRECCIÓN: Calcular el índice de la fila relativo al tbody para evitar el desfase
-            const indiceFila = Array.from(filas).indexOf(celda.parentElement);
-            const indiceColumna = celda.cellIndex;
-
-            if (esInactiva) {
-                if (!accionActual) {
-                    alert("Por favor, selecciona o crea una acción primero.");
-                    return;
-                }
-                const duracion = accionActual.duracion || 1;
-                for (let i = 0; i < duracion; i++) {
-                    const filaIndex = indiceFila + i;
-                    if (filaIndex >= filas.length) break;
-                    
-                    const celdaAPintar = filas[filaIndex].cells[indiceColumna];
-                    celdaAPintar.className = '';
-                    celdaAPintar.style.backgroundColor = accionActual.color;
-                    celdaAPintar.dataset.accion = accionActual.nombre;
-                }
-            } else {
-                celda.className = 'celda-inactiva';
-                celda.style.backgroundColor = '';
-                delete celda.dataset.accion;
-            }
-            actualizarAnalisis();
         });
+    });
+</script>
 
-        // --- EVENT LISTENERS DE LOS BOTONES ---
-        btnGenerar.addEventListener('click', generarTabla);
-        btnAgregarMaquina.addEventListener('click', agregarMaquina);
-        
-        btnCrearAccion.addEventListener('click', () => {
-            const duracion = parseInt(inputDuracionAccion.value) || 1;
-            crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
-        });
-
-        // NUEVO: Listener para el botón de modo eliminar
-        btnModoEliminar.addEventListener('click', () => {
-            modoEliminar = !modoEliminar; // Invierte el estado
-            if (modoEliminar) {
-                btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
-                btnModoEliminar.style.backgroundColor = '#ffc107'; // Cambia a color de advertencia
-                btnModoEliminar.style.color = '#000';
-                alert('Modo Eliminar Activado: Haz clic en una acción para borrarla.');
-            } else {
-                btnModoEliminar.textContent = 'Activar Modo Eliminar';
-                btnModoEliminar.style.backgroundColor = 'var(--rojo-peligro)'; // Vuelve al color original
-                btnModoEliminar.style.color = '#fff';
-            }
-        });
-
-        // --- INICIALIZACIÓN DE LA APP ---
-        function inicializar() {
-            crearNuevaAccion('Trabajo', 1, '#0d6efd');
-            crearNuevaAccion('Espera', 1, '#ffc107');
-            generarTabla();
-            divAcciones.querySelector('button').click();
-        }
-        
-        inicializar();
-    </script>
 </body>
 </html>
