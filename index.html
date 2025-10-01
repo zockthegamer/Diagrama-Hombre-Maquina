@@ -3,427 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificador Hombre-Máquina Avanzado</title>
+    <title>Análisis de Actividad</title>
     <style>
+        /* --- ESTILOS GENERALES --- */
         :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --background-color: #f4f7f9;
-            --container-bg: #ffffff;
-            --border-color: #ddd;
-            --header-bg: #ecf0f1;
+            --borde-color: #dee2e6;
+            --fondo-gris: #f8f9fa;
+            --azul-principal: #0d6efd;
+            --rojo-peligro: #dc3545;
+            --texto-claro: #fff;
         }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--fondo-gris);
+            color: #212529;
             margin: 0;
-            padding: 15px;
-            background-color: var(--background-color);
-            color: var(--secondary-color);
-        }
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            background-color: var(--container-bg);
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .config-panel, .actions-panel, .io-panel, #summary {
-            background-color: #fdfdfd;
-            border: 1px solid #e0e0e0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .control-group {
+            padding: 20px;
             display: flex;
-            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        main {
+            width: 100%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2, h3 {
+            border-bottom: 2px solid var(--borde-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* --- SECCIONES Y CONTROLES --- */
+        .seccion {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid var(--borde-color);
+            border-radius: 5px;
+        }
+        
+        .control-grupo, .accion-grupo {
+            display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
         }
-        button, input {
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-            border: 1px solid var(--border-color);
+        
+        input[type="number"], input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid var(--borde-color);
+            border-radius: 4px;
+            font-size: 1rem;
         }
+
         button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            color: var(--texto-claro);
+            font-weight: bold;
             cursor: pointer;
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-            transition: all 0.2s ease-in-out;
+            transition: opacity 0.2s;
         }
+        
         button:hover {
             opacity: 0.85;
         }
-        .action-btn.selected {
-            box-shadow: 0 0 0 3px var(--primary-color), 0 0 15px rgba(52, 152, 219, 0.5);
-            transform: translateY(-2px);
+
+        .btn-principal { background-color: var(--azul-principal); }
+        .btn-rojo { background-color: var(--rojo-peligro); }
+        
+        #acciones-disponibles {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        .danger-btn {
-            background-color: #e74c3c;
-            border-color: #e74c3c;
+
+        /* --- TABLA DE ACTIVIDADES --- */
+        .tabla-contenedor {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--borde-color);
         }
-        .delete-mode .action-btn:not(.no-delete):hover {
-            background-color: #c0392b !important;
-            animation: shake 0.5s;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-3px); }
-            75% { transform: translateX(3px); }
-        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 8px;
             text-align: center;
+        }
+
+        th, td {
+            border: 1px solid var(--borde-color);
+            padding: 5px;
+            min-width: 80px;
             height: 25px;
-            font-size: 12px;
-            white-space: nowrap;
+            font-size: 0.9rem;
         }
-        th {
-            background-color: var(--header-bg);
-            font-weight: 600;
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #e9ecef;
         }
-        tbody td {
+        
+        tbody td:first-child {
+            font-weight: bold;
+            background-color: var(--fondo-gris);
+        }
+        
+        td {
             cursor: pointer;
         }
-        td.minute-col {
-            background-color: var(--header-bg);
-            font-weight: bold;
-            cursor: default;
+
+        /* --- ESTADO INACTIVO (NUEVO) --- */
+        .celda-inactiva {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(220, 53, 69, 0.15),
+                rgba(220, 53, 69, 0.15) 8px,
+                transparent 8px,
+                transparent 16px
+            );
         }
-        #summary h3 { margin-top: 0; }
-        #summary p { margin: 5px 0; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Planificador Hombre-Máquina</h1>
+    <main>
+        <h2>Diagrama de Actividad Hombre-Máquina</h2>
 
-    <div class="config-panel">
-        <div class="control-group">
-            <label for="total-minutes-input">Minutos Totales:</label>
-            <input type="number" id="total-minutes-input" value="60" min="1" max="500">
-            <button id="generate-table-btn">Generar/Reiniciar Tabla</button>
-            <button id="add-machine-btn">+ Máquina</button>
+        <div class="seccion">
+            <h3>Configuración</h3>
+            <div class="control-grupo">
+                <label for="minutos">Minutos Totales:</label>
+                <input type="number" id="minutos" value="60">
+                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar Tabla</button>
+                <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
+            </div>
         </div>
-    </div>
-    
-    <div class="actions-panel">
-        <div class="control-group">
-             <input type="text" id="action-name-input" placeholder="Nombre de nueva acción">
-             <button id="create-action-btn">Crear Acción</button>
-             <button id="delete-mode-btn" class="danger-btn">Activar modo eliminar</button>
-        </div>
-        <div class="control-group" style="margin-top: 15px;">
-            <label for="color-picker">Color de acción:</label>
-            <input type="color" id="color-picker" value="#3498db">
-            <div id="custom-actions-container" class="control-group"></div>
-        </div>
-    </div>
-    
-    <div id="summary">
-        <h3>Análisis de Actividad</h3>
+        
+        <div class="seccion">
+            <h3>Acciones</h3>
+            <div class="accion-grupo">
+                <input type="text" id="nombreAccion" placeholder="Nombre de nueva acción">
+                <input type="color" id="colorAccion" value="#4caf50">
+                <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
+            </div>
+            <div id="acciones-disponibles"></div>
         </div>
 
-    <div style="overflow-x:auto;">
-        <table id="schedule-table">
-            <thead>
-                <tr>
-                    <th style="width: 60px;">Minuto</th>
-                    <th>Hombre</th>
-                    <th>M1</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <div class="io-panel">
-        <div class="control-group">
-            <button id="save-btn">Guardar Diagrama</button>
-            <label for="load-input" class="button-like-label" style="background-color: #2ecc71; border-color: #2ecc71; color: white; padding: 10px 15px; border-radius: 5px; cursor: pointer;">Cargar Diagrama</label>
-            <input type="file" id="load-input" accept=".json" style="display: none;">
+        <div class="seccion">
+            <h3>Análisis de Actividad</h3>
+            <div id="analisis-container">
+                <p>Genera la tabla para ver el análisis.</p>
+            </div>
         </div>
-    </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENTOS DEL DOM ---
-    const tableBody = document.querySelector('#schedule-table tbody');
-    const tableHeadRow = document.querySelector('#schedule-table thead tr');
-    const generateTableBtn = document.getElementById('generate-table-btn');
-    const totalMinutesInput = document.getElementById('total-minutes-input');
-    const addMachineBtn = document.getElementById('add-machine-btn');
-    const createActionBtn = document.getElementById('create-action-btn');
-    const actionNameInput = document.getElementById('action-name-input');
-    const customActionsContainer = document.getElementById('custom-actions-container');
-    const colorPicker = document.getElementById('color-picker');
-    const deleteModeBtn = document.getElementById('delete-mode-btn');
-    const summaryDiv = document.getElementById('summary');
-    const saveBtn = document.getElementById('save-btn');
-    const loadInput = document.getElementById('load-input');
+        <div class="tabla-contenedor">
+            <table id="tabla-actividades">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
 
-    // --- ESTADO DE LA APLICACIÓN ---
-    let machineCount = 1;
-    let totalMinutes = 60;
-    let selectedAction = { buttonEl: null };
-    let isPainting = false;
-    let isDeleteMode = false;
-    let actions = {};
+    </main>
 
-    // --- FUNCIONES PRINCIPALES ---
+    <script>
+        // --- ELEMENTOS DEL DOM ---
+        const inputMinutos = document.getElementById('minutos');
+        const btnGenerar = document.getElementById('btnGenerar');
+        const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
+        const inputNombreAccion = document.getElementById('nombreAccion');
+        const inputColorAccion = document.getElementById('colorAccion');
+        const btnCrearAccion = document.getElementById('btnCrearAccion');
+        const divAcciones = document.getElementById('acciones-disponibles');
+        const divAnalisis = document.getElementById('analisis-container');
+        const tabla = document.getElementById('tabla-actividades');
+        const thead = tabla.querySelector('thead');
+        const tbody = tabla.querySelector('tbody');
 
-    const initializeTable = () => {
-        tableBody.innerHTML = '';
-        tableHeadRow.innerHTML = '<th style="width: 60px;">Minuto</th><th>Hombre</th>';
-        machineCount = 0;
-        addMachineColumn(); // Add M1
+        // --- ESTADO DE LA APLICACIÓN ---
+        let columnas = ['Hombre'];
+        let acciones = [];
+        let accionActual = null;
+        
+        // --- FUNCIONES PRINCIPALES ---
 
-        totalMinutes = parseInt(totalMinutesInput.value) || 60;
-        for (let i = 1; i <= totalMinutes; i++) {
-            const row = tableBody.insertRow();
-            const minuteCell = row.insertCell();
-            minuteCell.textContent = i;
-            minuteCell.classList.add('minute-col');
-            for (let j = 0; j < machineCount + 1; j++) {
-                row.insertCell();
+        /**
+         * Limpia y genera la tabla completa con las columnas y minutos actuales.
+         */
+        function generarTabla() {
+            // Limpieza
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            const minutosTotales = parseInt(inputMinutos.value) || 0;
+            if (minutosTotales <= 0) return;
+            
+            // Crear cabecera
+            const filaCabecera = document.createElement('tr');
+            const thMinuto = document.createElement('th');
+            thMinuto.textContent = 'Minuto';
+            filaCabecera.appendChild(thMinuto);
+            columnas.forEach(nombre => {
+                const th = document.createElement('th');
+                th.textContent = nombre;
+                filaCabecera.appendChild(th);
+            });
+            thead.appendChild(filaCabecera);
+
+            // Crear cuerpo de la tabla
+            for (let i = 1; i <= minutosTotales; i++) {
+                const fila = document.createElement('tr');
+                const celdaMinuto = document.createElement('td');
+                celdaMinuto.textContent = i;
+                fila.appendChild(celdaMinuto);
+                
+                columnas.forEach(() => {
+                    const celdaActividad = document.createElement('td');
+                    celdaActividad.className = 'celda-inactiva'; // ESTADO POR DEFECTO
+                    fila.appendChild(celdaActividad);
+                });
+                tbody.appendChild(fila);
             }
+            actualizarAnalisis();
         }
-        updateAnalytics();
-    };
 
-    const addMachineColumn = () => {
-        machineCount++;
-        const newHeader = document.createElement('th');
-        newHeader.textContent = `M${machineCount}`;
-        tableHeadRow.appendChild(newHeader);
-        for (let i = 0; i < tableBody.rows.length; i++) {
-            tableBody.rows[i].insertCell();
-        }
-        updateAnalytics();
-    };
-
-    const addActionButton = (name, color, duration = 1, isDeletable = true) => {
-        const id = `action-${name.replace(/\s+/g, '-')}-${Date.now()}`;
-        const newButton = document.createElement('button');
-        newButton.innerText = name;
-        newButton.style.backgroundColor = color;
-        newButton.classList.add('action-btn');
-        if (!isDeletable) newButton.classList.add('no-delete');
-        newButton.dataset.actionId = id;
-        newButton.title = `Duración: ${duration} min`; // Tooltip para ver la duración
-
-        actions[id] = { name, color, duration };
-
-        newButton.addEventListener('click', () => {
-            if (isDeleteMode && isDeletable) {
-                delete actions[id];
-                newButton.remove();
-                if(selectedAction.buttonEl === newButton) selectedAction = { buttonEl: null };
+        /**
+         * Recalcula y muestra los porcentajes de actividad para cada columna.
+         */
+        function actualizarAnalisis() {
+            divAnalisis.innerHTML = '';
+            const minutosTotales = parseInt(inputMinutos.value) || 0;
+            if (minutosTotales === 0) {
+                divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
                 return;
             }
 
-            if (selectedAction.buttonEl) selectedAction.buttonEl.classList.remove('selected');
-            newButton.classList.add('selected');
-            colorPicker.value = color;
-            selectedAction = { name, color, duration, buttonEl: newButton, id };
-        });
-
-        customActionsContainer.appendChild(newButton);
-        return newButton;
-    };
-
-    const paintCell = (cell, action) => {
-        if (!cell || cell.classList.contains('minute-col')) return;
-        cell.style.backgroundColor = action.color;
-        cell.dataset.actionId = action.id;
-    };
-
-    const clearCell = (cell) => {
-        if (!cell || cell.classList.contains('minute-col')) return;
-        cell.style.backgroundColor = '';
-        delete cell.dataset.actionId;
-        updateAnalytics();
-    };
-
-    const updateAnalytics = () => {
-        const headers = Array.from(tableHeadRow.querySelectorAll('th')).slice(1);
-        let summaryHTML = '<h3>Análisis de Actividad</h3>';
-        
-        headers.forEach((header, colIndex) => {
-            let activeCells = 0;
-            for (let i = 0; i < tableBody.rows.length; i++) {
-                const cell = tableBody.rows[i].cells[colIndex + 1];
-                if (cell && cell.style.backgroundColor) {
-                    activeCells++;
-                }
-            }
-            const percentage = totalMinutes > 0 ? ((activeCells / totalMinutes) * 100).toFixed(1) : 0;
-            summaryHTML += `<p><b>${header.textContent}:</b> ${percentage}% de actividad (${activeCells}/${totalMinutes} min)</p>`;
-        });
-        summaryDiv.innerHTML = summaryHTML;
-    };
-
-    const saveDiagram = () => {
-        const gridData = [];
-        for (const row of tableBody.rows) {
-            const rowData = Array.from(row.cells).slice(1).map(cell => cell.dataset.actionId || null);
-            gridData.push(rowData);
-        }
-        
-        const state = {
-            machineCount,
-            totalMinutes,
-            actions,
-            gridData
-        };
-
-        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `diagrama-hombre-maquina-${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
-
-    const loadDiagram = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const state = JSON.parse(e.target.result);
-            
-            totalMinutesInput.value = state.totalMinutes;
-            actions = state.actions;
-
-            initializeTable();
-            while (machineCount < state.machineCount) {
-                addMachineColumn();
-            }
-
-            customActionsContainer.innerHTML = '';
-            addActionButton('Borrar', '#ffffff', 1, false); // Re-add clear button
-            Object.keys(state.actions).forEach(id => {
-                const action = state.actions[id];
-                addActionButton(action.name, action.color, action.duration);
-            });
-
-            state.gridData.forEach((rowData, rowIndex) => {
-                rowData.forEach((actionId, colIndex) => {
-                    if (actionId && actions[actionId]) {
-                        const cell = tableBody.rows[rowIndex].cells[colIndex + 1];
-                        paintCell(cell, { ...actions[actionId], id: actionId });
+            columnas.forEach((nombre, indiceColumna) => {
+                let celdasActivas = 0;
+                for (const fila of tbody.rows) {
+                    // +1 para saltar la columna de 'Minuto'
+                    if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
+                        celdasActivas++;
                     }
-                });
-            });
-            updateAnalytics();
-        };
-        reader.readAsText(file);
-    };
-
-    // --- EVENT LISTENERS ---
-
-    generateTableBtn.addEventListener('click', initializeTable);
-    addMachineBtn.addEventListener('click', addMachineColumn);
-
-    createActionBtn.addEventListener('click', () => {
-        const name = actionNameInput.value.trim();
-        if (!name || Object.values(actions).some(a => a.name === name)) {
-            alert('El nombre de la acción no puede estar vacío o ya existe.');
-            return;
-        }
-        
-        const durationStr = prompt(`¿Duración predeterminada para "${name}" en minutos?`, "1");
-        const duration = parseInt(durationStr);
-        
-        if (duration && !isNaN(duration) && duration > 0) {
-            addActionButton(name, colorPicker.value, duration);
-            actionNameInput.value = '';
-        } else {
-            alert("Por favor, introduce un número válido de minutos.");
-        }
-    });
-
-    deleteModeBtn.addEventListener('click', () => {
-        isDeleteMode = !isDeleteMode;
-        document.body.classList.toggle('delete-mode', isDeleteMode);
-        deleteModeBtn.textContent = isDeleteMode ? 'Desactivar modo eliminar' : 'Activar modo eliminar';
-    });
-
-    colorPicker.addEventListener('input', (e) => {
-        if (selectedAction.id && actions[selectedAction.id]) {
-            const newColor = e.target.value;
-            selectedAction.buttonEl.style.backgroundColor = newColor;
-            selectedAction.color = newColor;
-            actions[selectedAction.id].color = newColor;
-        }
-    });
-
-    tableBody.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        if (e.target.tagName === 'TD') clearCell(e.target);
-    });
-
-    tableBody.addEventListener('mousedown', (e) => {
-        if (e.button !== 0 || !selectedAction.id) return;
-        
-        const cell = e.target;
-        if (cell.tagName !== 'TD' || cell.classList.contains('minute-col')) return;
-
-        const { duration } = selectedAction;
-
-        if (duration > 1) {
-             const startRowIndex = cell.parentElement.rowIndex;
-             const colIndex = cell.cellIndex;
-             for (let i = 0; i < duration; i++) {
-                if (startRowIndex + i < tableBody.rows.length) {
-                    const targetCell = tableBody.rows[startRowIndex + i].cells[colIndex];
-                    paintCell(targetCell, selectedAction);
                 }
-             }
-             updateAnalytics();
-        } else {
-            isPainting = true;
-            paintCell(cell, selectedAction);
+                const porcentaje = (celdasActivas / minutosTotales) * 100;
+                const p = document.createElement('p');
+                p.textContent = `${nombre}: ${porcentaje.toFixed(1)}% de actividad (${celdasActivas}/${minutosTotales} min)`;
+                divAnalisis.appendChild(p);
+            });
         }
-    });
-
-    tableBody.addEventListener('mouseover', (e) => {
-        if (isPainting && e.target.tagName === 'TD') {
-            paintCell(e.target, selectedAction);
+        
+        /**
+         * Añade una nueva acción (botón seleccionable).
+         */
+        function crearNuevaAccion(nombre, color) {
+            if (!nombre) {
+                alert('Por favor, introduce un nombre para la acción.');
+                return;
+            }
+            const nuevaAccion = { nombre, color };
+            acciones.push(nuevaAccion);
+            
+            const btnAccion = document.createElement('button');
+            btnAccion.textContent = nombre;
+            btnAccion.style.backgroundColor = color;
+            btnAccion.style.border = '2px solid transparent';
+            
+            btnAccion.addEventListener('click', () => {
+                accionActual = nuevaAccion;
+                // Resalta el botón seleccionado
+                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
+                btnAccion.style.borderColor = '#000';
+            });
+            
+            divAcciones.appendChild(btnAccion);
+            inputNombreAccion.value = ''; // Limpiar input
         }
-    });
 
-    window.addEventListener('mouseup', () => {
-        if(isPainting) {
-            isPainting = false;
-            updateAnalytics();
+        /**
+         * Pide un nombre y agrega una nueva máquina (columna), luego regenera la tabla.
+         */
+        function agregarMaquina() {
+            const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
+            if (nombreMaquina && !columnas.includes(nombreMaquina)) {
+                columnas.push(nombreMaquina);
+                generarTabla();
+            } else if (columnas.includes(nombreMaquina)) {
+                alert("Ese nombre ya existe.");
+            }
         }
-    });
+        
+        // --- MANEJADOR DE EVENTOS DE LA TABLA (LÓGICA CENTRAL) ---
+        
+        tabla.addEventListener('click', function(event) {
+            const celda = event.target;
 
-    saveBtn.addEventListener('click', saveDiagram);
-    loadInput.addEventListener('change', loadDiagram);
+            // Salir si no se clickeó una celda de actividad (TD) o si no hay acción seleccionada
+            if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
+            
+            const esInactiva = celda.classList.contains('celda-inactiva');
+            const filas = tbody.rows;
+            const indiceFila = celda.parentElement.rowIndex; // rowIndex ya es base 0 para el tbody
+            const indiceColumna = celda.cellIndex;
 
-    // --- INICIALIZACIÓN ---
-    initializeTable();
-    addActionButton('Borrar', '#ffffff', 1, false);
-});
-</script>
+            // LÓGICA DE AUTOCOMPLETADO
+            if (esInactiva && accionActual) {
+                let filaSuperior = -1;
+                let filaInferior = -1;
 
+                // 1. Buscar hacia arriba la primera celda NO inactiva
+                for (let i = indiceFila - 1; i >= 0; i--) {
+                    if (!filas[i].cells[indiceColumna].classList.contains('celda-inactiva')) {
+                        filaSuperior = i;
+                        break;
+                    }
+                }
+
+                // 2. Buscar hacia abajo la primera celda NO inactiva
+                for (let i = indiceFila + 1; i < filas.length; i++) {
+                    if (!filas[i].cells[indiceColumna].classList.contains('celda-inactiva')) {
+                        filaInferior = i;
+                        break;
+                    }
+                }
+
+                // 3. Si se encontraron ambas, rellenar el hueco
+                if (filaSuperior !== -1 && filaInferior !== -1) {
+                    for (let i = filaSuperior + 1; i < filaInferior; i++) {
+                        const celdaRellenar = filas[i].cells[indiceColumna];
+                        celdaRellenar.className = ''; // Limpiar clase inactiva
+                        celdaRellenar.style.backgroundColor = accionActual.color;
+                        celdaRellenar.dataset.accion = accionActual.nombre;
+                    }
+                    actualizarAnalisis();
+                    return; // Detener para no procesar el click normal
+                }
+            }
+            
+            // LÓGICA DE CLICK NORMAL (PINTAR O BORRAR)
+            if (esInactiva) {
+                if (!accionActual) {
+                    alert("Por favor, selecciona o crea una acción primero.");
+                    return;
+                }
+                celda.className = '';
+                celda.style.backgroundColor = accionActual.color;
+                celda.dataset.accion = accionActual.nombre;
+            } else {
+                celda.className = 'celda-inactiva';
+                celda.style.backgroundColor = '';
+                delete celda.dataset.accion;
+            }
+
+            actualizarAnalisis();
+        });
+
+
+        // --- EVENT LISTENERS DE LOS BOTONES ---
+        btnGenerar.addEventListener('click', generarTabla);
+        btnAgregarMaquina.addEventListener('click', agregarMaquina);
+        btnCrearAccion.addEventListener('click', () => {
+            crearNuevaAccion(inputNombreAccion.value, inputColorAccion.value);
+        });
+
+        // --- INICIALIZACIÓN DE LA APP ---
+        function inicializar() {
+            crearNuevaAccion('Trabajo', '#0d6efd');
+            crearNuevaAccion('Espera', '#ffc107');
+            generarTabla();
+            // Seleccionar la primera acción por defecto
+            divAcciones.querySelector('button').click();
+        }
+        
+        inicializar();
+
+    </script>
 </body>
 </html>
+
