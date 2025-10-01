@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Actividad</title>
     <style>
-        /* --- ESTILOS GENERALES --- */
+        /* --- ESTILOS GENERALES (sin cambios) --- */
         :root {
             --borde-color: #dee2e6;
             --fondo-gris: #f8f9fa;
@@ -55,11 +55,16 @@
             margin-bottom: 15px;
         }
         
-        input[type="number"], input[type="text"] {
+        input[type="number"], input[type="text"], input[type="color"] {
             padding: 8px 12px;
             border: 1px solid var(--borde-color);
             border-radius: 4px;
             font-size: 1rem;
+        }
+        
+        /* Ajuste para el input de duración */
+        input#duracionAccion {
+            width: 80px;
         }
 
         button {
@@ -86,7 +91,7 @@
             flex-wrap: wrap;
         }
 
-        /* --- TABLA DE ACTIVIDADES --- */
+        /* --- TABLA DE ACTIVIDADES (sin cambios) --- */
         .tabla-contenedor {
             max-height: 600px;
             overflow-y: auto;
@@ -122,7 +127,7 @@
             cursor: pointer;
         }
 
-        /* --- ESTADO INACTIVO (NUEVO) --- */
+        /* --- ESTADO INACTIVO --- */
         .celda-inactiva {
             background-image: repeating-linear-gradient(
                 45deg,
@@ -152,7 +157,8 @@
         <div class="seccion">
             <h3>Acciones</h3>
             <div class="accion-grupo">
-                <input type="text" id="nombreAccion" placeholder="Nombre de nueva acción">
+                <input type="text" id="nombreAccion" placeholder="Nombre de acción">
+                <input type="number" id="duracionAccion" placeholder="Minutos" min="1" value="1" title="Duración en minutos">
                 <input type="color" id="colorAccion" value="#4caf50">
                 <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
             </div>
@@ -181,6 +187,7 @@
         const btnGenerar = document.getElementById('btnGenerar');
         const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
         const inputNombreAccion = document.getElementById('nombreAccion');
+        const inputDuracionAccion = document.getElementById('duracionAccion'); // NUEVO
         const inputColorAccion = document.getElementById('colorAccion');
         const btnCrearAccion = document.getElementById('btnCrearAccion');
         const divAcciones = document.getElementById('acciones-disponibles');
@@ -194,51 +201,26 @@
         let acciones = [];
         let accionActual = null;
         
-        // --- FUNCIONES PRINCIPALES ---
+        // --- FUNCIONES (sin cambios en su mayoría) ---
 
-        /**
-         * Limpia y genera la tabla completa con las columnas y minutos actuales.
-         */
         function generarTabla() {
-            // Limpieza
             thead.innerHTML = '';
             tbody.innerHTML = '';
-
             const minutosTotales = parseInt(inputMinutos.value) || 0;
             if (minutosTotales <= 0) return;
             
-            // Crear cabecera
             const filaCabecera = document.createElement('tr');
-            const thMinuto = document.createElement('th');
-            thMinuto.textContent = 'Minuto';
-            filaCabecera.appendChild(thMinuto);
-            columnas.forEach(nombre => {
-                const th = document.createElement('th');
-                th.textContent = nombre;
-                filaCabecera.appendChild(th);
-            });
+            filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
             thead.appendChild(filaCabecera);
 
-            // Crear cuerpo de la tabla
             for (let i = 1; i <= minutosTotales; i++) {
                 const fila = document.createElement('tr');
-                const celdaMinuto = document.createElement('td');
-                celdaMinuto.textContent = i;
-                fila.appendChild(celdaMinuto);
-                
-                columnas.forEach(() => {
-                    const celdaActividad = document.createElement('td');
-                    celdaActividad.className = 'celda-inactiva'; // ESTADO POR DEFECTO
-                    fila.appendChild(celdaActividad);
-                });
+                fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
                 tbody.appendChild(fila);
             }
             actualizarAnalisis();
         }
 
-        /**
-         * Recalcula y muestra los porcentajes de actividad para cada columna.
-         */
         function actualizarAnalisis() {
             divAnalisis.innerHTML = '';
             const minutosTotales = parseInt(inputMinutos.value) || 0;
@@ -246,11 +228,9 @@
                 divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
                 return;
             }
-
             columnas.forEach((nombre, indiceColumna) => {
                 let celdasActivas = 0;
                 for (const fila of tbody.rows) {
-                    // +1 para saltar la columna de 'Minuto'
                     if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
                         celdasActivas++;
                     }
@@ -263,35 +243,33 @@
         }
         
         /**
-         * Añade una nueva acción (botón seleccionable).
+         * CAMBIO: La función ahora guarda la duración de la acción.
          */
-        function crearNuevaAccion(nombre, color) {
+        function crearNuevaAccion(nombre, duracion, color) {
             if (!nombre) {
                 alert('Por favor, introduce un nombre para la acción.');
                 return;
             }
-            const nuevaAccion = { nombre, color };
+            const nuevaAccion = { nombre, duracion: duracion, color };
             acciones.push(nuevaAccion);
             
             const btnAccion = document.createElement('button');
-            btnAccion.textContent = nombre;
+            // Muestra la duración en el botón para mayor claridad
+            btnAccion.textContent = `${nombre} (${duracion}m)`;
             btnAccion.style.backgroundColor = color;
             btnAccion.style.border = '2px solid transparent';
             
             btnAccion.addEventListener('click', () => {
                 accionActual = nuevaAccion;
-                // Resalta el botón seleccionado
                 document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
                 btnAccion.style.borderColor = '#000';
             });
             
             divAcciones.appendChild(btnAccion);
-            inputNombreAccion.value = ''; // Limpiar input
+            inputNombreAccion.value = '';
+            inputDuracionAccion.value = '1'; // Resetea la duración a 1
         }
 
-        /**
-         * Pide un nombre y agrega una nueva máquina (columna), luego regenera la tabla.
-         */
         function agregarMaquina() {
             const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
             if (nombreMaquina && !columnas.includes(nombreMaquina)) {
@@ -302,63 +280,38 @@
             }
         }
         
-        // --- MANEJADOR DE EVENTOS DE LA TABLA (LÓGICA CENTRAL) ---
+        // --- MANEJADOR DE EVENTOS DE LA TABLA (LÓGICA ACTUALIZADA) ---
         
         tabla.addEventListener('click', function(event) {
             const celda = event.target;
 
-            // Salir si no se clickeó una celda de actividad (TD) o si no hay acción seleccionada
             if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
             
             const esInactiva = celda.classList.contains('celda-inactiva');
             const filas = tbody.rows;
-            const indiceFila = celda.parentElement.rowIndex; // rowIndex ya es base 0 para el tbody
+            const indiceFila = celda.parentElement.rowIndex;
             const indiceColumna = celda.cellIndex;
 
-            // LÓGICA DE AUTOCOMPLETADO
-            if (esInactiva && accionActual) {
-                let filaSuperior = -1;
-                let filaInferior = -1;
-
-                // 1. Buscar hacia arriba la primera celda NO inactiva
-                for (let i = indiceFila - 1; i >= 0; i--) {
-                    if (!filas[i].cells[indiceColumna].classList.contains('celda-inactiva')) {
-                        filaSuperior = i;
-                        break;
-                    }
-                }
-
-                // 2. Buscar hacia abajo la primera celda NO inactiva
-                for (let i = indiceFila + 1; i < filas.length; i++) {
-                    if (!filas[i].cells[indiceColumna].classList.contains('celda-inactiva')) {
-                        filaInferior = i;
-                        break;
-                    }
-                }
-
-                // 3. Si se encontraron ambas, rellenar el hueco
-                if (filaSuperior !== -1 && filaInferior !== -1) {
-                    for (let i = filaSuperior + 1; i < filaInferior; i++) {
-                        const celdaRellenar = filas[i].cells[indiceColumna];
-                        celdaRellenar.className = ''; // Limpiar clase inactiva
-                        celdaRellenar.style.backgroundColor = accionActual.color;
-                        celdaRellenar.dataset.accion = accionActual.nombre;
-                    }
-                    actualizarAnalisis();
-                    return; // Detener para no procesar el click normal
-                }
-            }
-            
-            // LÓGICA DE CLICK NORMAL (PINTAR O BORRAR)
             if (esInactiva) {
                 if (!accionActual) {
                     alert("Por favor, selecciona o crea una acción primero.");
                     return;
                 }
-                celda.className = '';
-                celda.style.backgroundColor = accionActual.color;
-                celda.dataset.accion = accionActual.nombre;
+
+                // --- LÓGICA 1: LLENADO POR DURACIÓN ---
+                const duracion = accionActual.duracion || 1;
+                for (let i = 0; i < duracion; i++) {
+                    const filaIndex = indiceFila + i;
+                    if (filaIndex >= filas.length) break; // Evita error al final de la tabla
+                    
+                    const celdaAPintar = filas[filaIndex].cells[indiceColumna];
+                    celdaAPintar.className = '';
+                    celdaAPintar.style.backgroundColor = accionActual.color;
+                    celdaAPintar.dataset.accion = accionActual.nombre;
+                }
+                
             } else {
+                // LÓGICA PARA BORRAR: Si la celda ya está pintada, la vuelve inactiva.
                 celda.className = 'celda-inactiva';
                 celda.style.backgroundColor = '';
                 delete celda.dataset.accion;
@@ -371,17 +324,20 @@
         // --- EVENT LISTENERS DE LOS BOTONES ---
         btnGenerar.addEventListener('click', generarTabla);
         btnAgregarMaquina.addEventListener('click', agregarMaquina);
+        
+        // CAMBIO: Se lee el valor de duración al crear la acción.
         btnCrearAccion.addEventListener('click', () => {
-            crearNuevaAccion(inputNombreAccion.value, inputColorAccion.value);
+            const duracion = parseInt(inputDuracionAccion.value) || 1;
+            crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
         });
 
         // --- INICIALIZACIÓN DE LA APP ---
         function inicializar() {
-            crearNuevaAccion('Trabajo', '#0d6efd');
-            crearNuevaAccion('Espera', '#ffc107');
+            // Se añade la duración a las acciones por defecto
+            crearNuevaAccion('Trabajo', 1, '#0d6efd');
+            crearNuevaAccion('Espera', 1, '#ffc107');
             generarTabla();
-            // Seleccionar la primera acción por defecto
-            divAcciones.querySelector('button').click();
+            divAcciones.querySelector('button').click(); // Seleccionar la primera acción
         }
         
         inicializar();
@@ -389,4 +345,3 @@
     </script>
 </body>
 </html>
-
