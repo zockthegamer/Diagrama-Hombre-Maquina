@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Actividad</title>
     <style>
-        /* --- ESTILOS GENERALES (sin cambios) --- */
+        /* --- ESTILOS GENERALES --- */
         :root {
             --borde-color: #dee2e6;
             --fondo-gris: #f8f9fa;
@@ -62,7 +62,6 @@
             font-size: 1rem;
         }
         
-        /* Ajuste para el input de duración */
         input#duracionAccion {
             width: 80px;
         }
@@ -91,7 +90,7 @@
             flex-wrap: wrap;
         }
 
-        /* --- TABLA DE ACTIVIDADES (sin cambios) --- */
+        /* --- TABLA DE ACTIVIDADES --- */
         .tabla-contenedor {
             max-height: 600px;
             overflow-y: auto;
@@ -127,7 +126,6 @@
             cursor: pointer;
         }
 
-        /* --- ESTADO INACTIVO --- */
         .celda-inactiva {
             background-image: repeating-linear-gradient(
                 45deg,
@@ -161,6 +159,7 @@
                 <input type="number" id="duracionAccion" placeholder="Minutos" min="1" value="1" title="Duración en minutos">
                 <input type="color" id="colorAccion" value="#4caf50">
                 <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
+                <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
             </div>
             <div id="acciones-disponibles"></div>
         </div>
@@ -187,9 +186,10 @@
         const btnGenerar = document.getElementById('btnGenerar');
         const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
         const inputNombreAccion = document.getElementById('nombreAccion');
-        const inputDuracionAccion = document.getElementById('duracionAccion'); // NUEVO
+        const inputDuracionAccion = document.getElementById('duracionAccion');
         const inputColorAccion = document.getElementById('colorAccion');
         const btnCrearAccion = document.getElementById('btnCrearAccion');
+        const btnModoEliminar = document.getElementById('btnModoEliminar'); // NUEVO
         const divAcciones = document.getElementById('acciones-disponibles');
         const divAnalisis = document.getElementById('analisis-container');
         const tabla = document.getElementById('tabla-actividades');
@@ -200,19 +200,19 @@
         let columnas = ['Hombre'];
         let acciones = [];
         let accionActual = null;
-        
-        // --- FUNCIONES (sin cambios en su mayoría) ---
+        let modoEliminar = false; // NUEVO: Flag para el modo de eliminación
+
+        // --- FUNCIONES ---
 
         function generarTabla() {
+            // ... (Sin cambios, esta función es correcta)
             thead.innerHTML = '';
             tbody.innerHTML = '';
             const minutosTotales = parseInt(inputMinutos.value) || 0;
             if (minutosTotales <= 0) return;
-            
             const filaCabecera = document.createElement('tr');
             filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
             thead.appendChild(filaCabecera);
-
             for (let i = 1; i <= minutosTotales; i++) {
                 const fila = document.createElement('tr');
                 fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
@@ -222,6 +222,7 @@
         }
 
         function actualizarAnalisis() {
+            // ... (Sin cambios, esta función es correcta)
             divAnalisis.innerHTML = '';
             const minutosTotales = parseInt(inputMinutos.value) || 0;
             if (minutosTotales === 0) {
@@ -243,35 +244,43 @@
         }
         
         /**
-         * CAMBIO: La función ahora guarda la duración de la acción.
+         * CAMBIO: El listener del botón de acción ahora comprueba si el modo eliminar está activo.
          */
         function crearNuevaAccion(nombre, duracion, color) {
             if (!nombre) {
                 alert('Por favor, introduce un nombre para la acción.');
                 return;
             }
-            const nuevaAccion = { nombre, duracion: duracion, color };
+            const nuevaAccion = { nombre, duracion, color };
             acciones.push(nuevaAccion);
             
             const btnAccion = document.createElement('button');
-            // Muestra la duración en el botón para mayor claridad
             btnAccion.textContent = `${nombre} (${duracion}m)`;
             btnAccion.style.backgroundColor = color;
             btnAccion.style.border = '2px solid transparent';
             
             btnAccion.addEventListener('click', () => {
-                accionActual = nuevaAccion;
-                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
-                btnAccion.style.borderColor = '#000';
+                if (modoEliminar) {
+                    // Si el modo eliminar está activo, llama a la función de borrado
+                    if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"? Se borrarán todas sus entradas en la tabla.`)) {
+                        eliminarAccion(nuevaAccion, btnAccion);
+                    }
+                } else {
+                    // Comportamiento normal: seleccionar la acción
+                    accionActual = nuevaAccion;
+                    document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
+                    btnAccion.style.borderColor = '#000';
+                }
             });
             
             divAcciones.appendChild(btnAccion);
             inputNombreAccion.value = '';
-            inputDuracionAccion.value = '1'; // Resetea la duración a 1
+            inputDuracionAccion.value = '1';
         }
 
         function agregarMaquina() {
-            const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
+            // ... (Sin cambios, esta función es correcta)
+             const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
             if (nombreMaquina && !columnas.includes(nombreMaquina)) {
                 columnas.push(nombreMaquina);
                 generarTabla();
@@ -280,7 +289,37 @@
             }
         }
         
-        // --- MANEJADOR DE EVENTOS DE LA TABLA (LÓGICA ACTUALIZADA) ---
+        /**
+         * NUEVO: Función completa para eliminar una acción.
+         */
+        function eliminarAccion(accionAEliminar, botonAEliminar) {
+            // 1. Limpiar celdas en la tabla que usan esta acción
+            for (const fila of tbody.rows) {
+                for (const celda of fila.cells) {
+                    if (celda.dataset.accion === accionAEliminar.nombre) {
+                        celda.className = 'celda-inactiva';
+                        celda.style.backgroundColor = '';
+                        delete celda.dataset.accion;
+                    }
+                }
+            }
+
+            // 2. Quitar la acción del array de acciones
+            acciones = acciones.filter(a => a.nombre !== accionAEliminar.nombre);
+
+            // 3. Quitar el botón de la UI
+            botonAEliminar.remove();
+
+            // 4. Si la acción eliminada era la actual, deseleccionarla
+            if (accionActual && accionActual.nombre === accionAEliminar.nombre) {
+                accionActual = null;
+            }
+
+            // 5. Actualizar los porcentajes de análisis
+            actualizarAnalisis();
+        }
+
+        // --- MANEJADOR DE EVENTOS DE LA TABLA ---
         
         tabla.addEventListener('click', function(event) {
             const celda = event.target;
@@ -289,7 +328,8 @@
             
             const esInactiva = celda.classList.contains('celda-inactiva');
             const filas = tbody.rows;
-            const indiceFila = celda.parentElement.rowIndex;
+            // CORRECCIÓN: Calcular el índice de la fila relativo al tbody para evitar el desfase
+            const indiceFila = Array.from(filas).indexOf(celda.parentElement);
             const indiceColumna = celda.cellIndex;
 
             if (esInactiva) {
@@ -297,51 +337,57 @@
                     alert("Por favor, selecciona o crea una acción primero.");
                     return;
                 }
-
-                // --- LÓGICA 1: LLENADO POR DURACIÓN ---
                 const duracion = accionActual.duracion || 1;
                 for (let i = 0; i < duracion; i++) {
                     const filaIndex = indiceFila + i;
-                    if (filaIndex >= filas.length) break; // Evita error al final de la tabla
+                    if (filaIndex >= filas.length) break;
                     
                     const celdaAPintar = filas[filaIndex].cells[indiceColumna];
                     celdaAPintar.className = '';
                     celdaAPintar.style.backgroundColor = accionActual.color;
                     celdaAPintar.dataset.accion = accionActual.nombre;
                 }
-                
             } else {
-                // LÓGICA PARA BORRAR: Si la celda ya está pintada, la vuelve inactiva.
                 celda.className = 'celda-inactiva';
                 celda.style.backgroundColor = '';
                 delete celda.dataset.accion;
             }
-
             actualizarAnalisis();
         });
-
 
         // --- EVENT LISTENERS DE LOS BOTONES ---
         btnGenerar.addEventListener('click', generarTabla);
         btnAgregarMaquina.addEventListener('click', agregarMaquina);
         
-        // CAMBIO: Se lee el valor de duración al crear la acción.
         btnCrearAccion.addEventListener('click', () => {
             const duracion = parseInt(inputDuracionAccion.value) || 1;
             crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
         });
 
+        // NUEVO: Listener para el botón de modo eliminar
+        btnModoEliminar.addEventListener('click', () => {
+            modoEliminar = !modoEliminar; // Invierte el estado
+            if (modoEliminar) {
+                btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
+                btnModoEliminar.style.backgroundColor = '#ffc107'; // Cambia a color de advertencia
+                btnModoEliminar.style.color = '#000';
+                alert('Modo Eliminar Activado: Haz clic en una acción para borrarla.');
+            } else {
+                btnModoEliminar.textContent = 'Activar Modo Eliminar';
+                btnModoEliminar.style.backgroundColor = 'var(--rojo-peligro)'; // Vuelve al color original
+                btnModoEliminar.style.color = '#fff';
+            }
+        });
+
         // --- INICIALIZACIÓN DE LA APP ---
         function inicializar() {
-            // Se añade la duración a las acciones por defecto
             crearNuevaAccion('Trabajo', 1, '#0d6efd');
             crearNuevaAccion('Espera', 1, '#ffc107');
             generarTabla();
-            divAcciones.querySelector('button').click(); // Seleccionar la primera acción
+            divAcciones.querySelector('button').click();
         }
         
         inicializar();
-
     </script>
 </body>
 </html>
