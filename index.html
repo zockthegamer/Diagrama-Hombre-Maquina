@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAnalytics();
     };
 
-    const addActionButton = (name, color, isDeletable = true) => {
+    const addActionButton = (name, color, duration = 1, isDeletable = true) => {
         const id = `action-${name.replace(/\s+/g, '-')}-${Date.now()}`;
         const newButton = document.createElement('button');
         newButton.innerText = name;
@@ -225,8 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
         newButton.classList.add('action-btn');
         if (!isDeletable) newButton.classList.add('no-delete');
         newButton.dataset.actionId = id;
+        newButton.title = `Duración: ${duration} min`; // Tooltip para ver la duración
 
-        actions[id] = { name, color };
+        actions[id] = { name, color, duration };
 
         newButton.addEventListener('click', () => {
             if (isDeleteMode && isDeletable) {
@@ -239,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedAction.buttonEl) selectedAction.buttonEl.classList.remove('selected');
             newButton.classList.add('selected');
             colorPicker.value = color;
-            selectedAction = { name, color, buttonEl: newButton, id };
+            selectedAction = { name, color, duration, buttonEl: newButton, id };
         });
 
         customActionsContainer.appendChild(newButton);
@@ -250,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!cell || cell.classList.contains('minute-col')) return;
         cell.style.backgroundColor = action.color;
         cell.dataset.actionId = action.id;
-        updateAnalytics();
     };
 
     const clearCell = (cell) => {
@@ -308,19 +308,20 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = (e) => {
             const state = JSON.parse(e.target.result);
             
-            // Restore state
             totalMinutesInput.value = state.totalMinutes;
             actions = state.actions;
 
-            // Rebuild UI
             initializeTable();
             while (machineCount < state.machineCount) {
                 addMachineColumn();
             }
 
             customActionsContainer.innerHTML = '';
-            addActionButton('Borrar', '#ffffff', false); // Re-add clear button
-            Object.values(state.actions).forEach(action => addActionButton(action.name, action.color));
+            addActionButton('Borrar', '#ffffff', 1, false); // Re-add clear button
+            Object.keys(state.actions).forEach(id => {
+                const action = state.actions[id];
+                addActionButton(action.name, action.color, action.duration);
+            });
 
             state.gridData.forEach((rowData, rowIndex) => {
                 rowData.forEach((actionId, colIndex) => {
@@ -342,11 +343,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createActionBtn.addEventListener('click', () => {
         const name = actionNameInput.value.trim();
-        if (name && !Object.values(actions).some(a => a.name === name)) {
-            addActionButton(name, colorPicker.value);
+        if (!name || Object.values(actions).some(a => a.name === name)) {
+            alert('El nombre de la acción no puede estar vacío o ya existe.');
+            return;
+        }
+        
+        const durationStr = prompt(`¿Duración predeterminada para "${name}" en minutos?`, "1");
+        const duration = parseInt(durationStr);
+        
+        if (duration && !isNaN(duration) && duration > 0) {
+            addActionButton(name, colorPicker.value, duration);
             actionNameInput.value = '';
         } else {
-            alert('El nombre de la acción no puede estar vacío o ya existe.');
+            alert("Por favor, introduce un número válido de minutos.");
         }
     });
 
@@ -357,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     colorPicker.addEventListener('input', (e) => {
-        if (selectedAction.buttonEl) {
+        if (selectedAction.id && actions[selectedAction.id]) {
             const newColor = e.target.value;
             selectedAction.buttonEl.style.backgroundColor = newColor;
             selectedAction.color = newColor;
@@ -371,20 +380,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tableBody.addEventListener('mousedown', (e) => {
-        if (e.button !== 0 || !selectedAction.id) return; // Only for left-click and if an action is selected
-        isPainting = true;
+        if (e.button !== 0 || !selectedAction.id) return;
         
         const cell = e.target;
-        if (cell.tagName === 'TD' && !cell.classList.contains('minute-col')) {
-            const duration = parseInt(prompt("¿Cuántos minutos dura la acción? (Para 1 min, arrastre el ratón)", "1"));
-            if (duration && !isNaN(duration) && duration > 0) {
-                 const startRow = cell.parentElement.rowIndex;
-                 const colIndex = cell.cellIndex;
-                 for (let i = 0; i < duration && (startRow + i) < tableBody.rows.length; i++) {
-                    const targetCell = tableBody.rows[startRow + i].cells[colIndex];
+        if (cell.tagName !== 'TD' || cell.classList.contains('minute-col')) return;
+
+        const { duration } = selectedAction;
+
+        if (duration > 1) {
+             const startRowIndex = cell.parentElement.rowIndex;
+             const colIndex = cell.cellIndex;
+             for (let i = 0; i < duration; i++) {
+                if (startRowIndex + i < tableBody.rows.length) {
+                    const targetCell = tableBody.rows[startRowIndex + i].cells[colIndex];
                     paintCell(targetCell, selectedAction);
-                 }
-            }
+                }
+             }
+             updateAnalytics();
+        } else {
+            isPainting = true;
+            paintCell(cell, selectedAction);
         }
     });
 
@@ -395,7 +410,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('mouseup', () => {
-        isPainting = false;
+        if(isPainting) {
+            isPainting = false;
+            updateAnalytics();
+        }
     });
 
     saveBtn.addEventListener('click', saveDiagram);
@@ -403,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INICIALIZACIÓN ---
     initializeTable();
-    addActionButton('Borrar', '#ffffff', false);
+    addActionButton('Borrar', '#ffffff', 1, false);
 });
 </script>
 
