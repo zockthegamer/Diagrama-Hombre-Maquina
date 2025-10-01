@@ -3,235 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagrama Dinámico Hombre-Máquina</title>
+    <title>Diagrama H-M Visual e Interactivo</title>
     <style>
+        :root {
+            --cell-size: 30px;
+            --border-color: #e0e0e0;
+            --header-bg: #34495e;
+            --tool-bg: #ecf0f1;
+            --task-load: rgba(52, 152, 219, 0.9); /* Azul */
+            --task-unload: rgba(46, 204, 113, 0.9); /* Verde */
+            --task-machining: rgba(241, 196, 15, 0.9); /* Amarillo */
+            --task-transport: rgba(155, 89, 182, 0.9); /* Morado */
+            --task-idle: rgba(189, 195, 199, 0.8); /* Gris */
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             background-color: #f4f7f9;
-            color: #333;
         }
         .container {
-            max-width: 95%;
-            margin: auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px
- 10px rgba(0,0,0,0.05);
-        }
-        h1, h2 {
-            color: #2c3e50;
-            text-align: center;
-        }
-        #setup-container {
-            text-align: center;
-            padding: 30px;
-            border: 2px dashed #bdc3c7;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        #chart-container {
-            display: none; /* Oculto por defecto */
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            table-layout: fixed;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px 8px;
-            text-align: center;
-            vertical-align: middle;
-            word-wrap: break-word;
-        }
-        th {
-            background-color: #34495e;
-            color: white;
-            font-weight: 600;
-        }
-        .activity-bar-container {
-            min-height: 40px;
-            width: 100%;
-            background-color: #e0e0e0;
-            position: relative;
-        }
-        .trabajando { background-color: #27ae60; /* Verde */ }
-        .inactivo { background-color: #e74c3c; /* Rojo */ }
-        .espera { background-color: #f1c40f; /* Amarillo */ }
-        
-        input, select {
             width: 95%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            max-width: 1400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .btn {
-            padding: 10px 15px;
-            border: none;
+        h1 { color: #2c3e50; text-align: center; }
+
+        /* --- CONTROLES Y HERRAMIENTAS --- */
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: var(--tool-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .tool-group {
+            margin: 5px 15px;
+        }
+        .tool-group label { font-weight: bold; margin-right: 10px; }
+        .task-btn {
+            padding: 8px 12px;
+            border: 2px solid transparent;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             color: white;
-            font-size: 16px;
-            margin: 5px;
+            margin: 2px;
         }
-        .btn-primary { background-color: #2980b9; }
-        .btn-add { background-color: #3498db; }
-        .btn-delete { background-color: #c0392b; }
-        .footer-totals {
+        .task-btn.active {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        #btn-load { background-color: var(--task-load); }
+        #btn-unload { background-color: var(--task-unload); }
+        #btn-machining { background-color: var(--task-machining); }
+        #btn-transport { background-color: var(--task-transport); }
+        #btn-idle { background-color: var(--task-idle); }
+        #btn-delete { background-color: #e74c3c; }
+
+        /* --- DIAGRAMA GRID --- */
+        #chart-wrapper { overflow-x: auto; }
+        #chart-grid {
+            display: grid;
+            border-left: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+        .grid-header, .grid-cell, .time-label {
+            height: var(--cell-size);
+            min-width: 120px; /* Ancho de columna */
+            box-sizing: border-box;
+        }
+        .grid-header {
+            background-color: var(--header-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            background-color: #ecf0f1;
+            position: sticky; top: 0;
         }
+        .grid-cell {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        .grid-cell:hover { background-color: #f0f8ff; }
+
+        /* --- BLOQUES DE TAREA --- */
+        .task-block {
+            position: absolute;
+            width: 120px; /* Igual al min-width de celda */
+            box-sizing: border-box;
+            background: #ccc;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none; /* Para poder hacer clic "a través" de él para eliminar */
+            z-index: 10;
+        }
+        
+        /* --- TOTALES --- */
+        #totals { margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Diagrama Dinámico Hombre-Máquina 🏭</h1>
+    <h1>Diagrama Hombre-Máquina Visual ✍️</h1>
 
-    <div id="setup-container">
-        <h2>Configuración Inicial</h2>
-        <label for="machine-count"><strong>¿Cuántas máquinas vas a analizar?</strong></label>
-        <br><br>
-        <input type="number" id="machine-count" value="2" min="1" max="10" style="width: 100px; text-align: center; font-size: 18px;">
-        <br><br>
-        <button onclick="createChart()" class="btn btn-primary">Crear Diagrama</button>
+    <div class="controls">
+        <div class="tool-group">
+            <label>1. Elige una Tarea:</label>
+            <button class="task-btn" id="btn-load" data-task="load" data-entity="hombre">Cargar</button>
+            <button class="task-btn" id="btn-unload" data-task="unload" data-entity="hombre">Descargar</button>
+            <button class="task-btn" id="btn-transport" data-task="transport" data-entity="hombre">Transporte</button>
+            <button class="task-btn" id="btn-machining" data-task="machining" data-entity="maquina">Maquinado</button>
+            <button class="task-btn" id="btn-idle" data-task="idle" data-entity="ambos">Espera</button>
+        </div>
+        <div class="tool-group">
+            <label>Herramienta:</label>
+            <button class="task-btn" id="btn-delete">Eliminar Tarea</button>
+        </div>
+    </div>
+    
+    <div id="chart-wrapper">
+        <div id="chart-grid"></div>
     </div>
 
-    <div id="chart-container">
-        <table id="manMachineChart">
-            <thead></thead>
-            <tbody></tbody>
-            <tfoot></tfoot>
-        </table>
-        <br>
-        <button onclick="addRow()" class="btn btn-add">➕ Añadir Actividad</button>
+    <div id="totals">
+        <h2>📊 Resumen de Tiempos</h2>
+        <table id="totals-table" style="width:100%; border-collapse: collapse;"></table>
     </div>
 </div>
 
 <script>
-    let machineCount = 0;
-    let rowCounter = 0;
+    // --- CONFIGURACIÓN INICIAL ---
+    const NUM_MACHINES = 3;
+    const TOTAL_TIME_UNITS = 30; // 30 "minutos" o filas
+    const COLUMNS = ['Hombre', ...Array.from({ length: NUM_MACHINES }, (_, i) => `Máquina ${i + 1}`)];
+    
+    // --- ESTADO DE LA APLICACIÓN ---
+    let activeTool = { type: 'task', task: 'load', entity: 'hombre' };
+    let tasks = [];
 
-    function createChart() {
-        machineCount = parseInt(document.getElementById('machine-count').value);
-        if (isNaN(machineCount) || machineCount < 1) {
-            alert("Por favor, ingresa un número válido de máquinas (mínimo 1).");
-            return;
-        }
+    // --- ELEMENTOS DEL DOM ---
+    const grid = document.getElementById('chart-grid');
+    const toolButtons = document.querySelectorAll('.task-btn');
 
-        document.getElementById('setup-container').style.display = 'none';
-        document.getElementById('chart-container').style.display = 'block';
-
-        generateTableStructure();
-        addRow(); // Añade la primera fila al crear la tabla
+    // --- LÓGICA DE LA APLICACIÓN ---
+    function initialize() {
+        setupGrid();
+        setupEventListeners();
+        setActiveTool(document.getElementById('btn-load'));
     }
 
-    function generateTableStructure() {
-        const table = document.getElementById('manMachineChart');
-        const thead = table.querySelector('thead');
-        const tfoot = table.querySelector('tfoot');
+    function setupGrid() {
+        grid.innerHTML = '';
+        grid.style.gridTemplateColumns = `repeat(${COLUMNS.length}, 1fr)`;
 
-        // Generar Cabecera
-        let headerHTML = '<tr><th style="width: 20%;">Actividad</th><th style="width: 10%;">Tiempo (min)</th><th style="width: 15%;">Hombre</th>';
-        for (let i = 1; i <= machineCount; i++) {
-            headerHTML += `<th>Máquina ${i}</th>`;
-        }
-        headerHTML += '<th style="width: 5%;">Acción</th></tr>';
-        thead.innerHTML = headerHTML;
+        // 1. Crear cabeceras
+        COLUMNS.forEach(colName => {
+            const header = document.createElement('div');
+            header.className = 'grid-header';
+            header.textContent = colName;
+            grid.appendChild(header);
+        });
 
-        // Generar Pie de Tabla (Totals)
-        let footerHTML = '<tr class="footer-totals"><td><strong>TOTALES</strong></td><td id="total-time">0.00</td><td id="total-hombre">0 (0%)</td>';
-        for (let i = 1; i <= machineCount; i++) {
-            footerHTML += `<td id="total-maquina-${i}">0 (0%)</td>`;
+        // 2. Crear celdas de la cuadrícula
+        for (let row = 0; row < TOTAL_TIME_UNITS; row++) {
+            for (let col = 0; col < COLUMNS.length; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                grid.appendChild(cell);
+            }
         }
-        footerHTML += '<td></td></tr>';
-        tfoot.innerHTML = footerHTML;
     }
 
-    function createStatusSelector(entityName, rowIndex) {
-        return `
-            <select onchange="updateChart()" class="status-selector" data-entity="${entityName}" data-row="${rowIndex}">
-                <option value="inactivo">Inactivo</option>
-                <option value="trabajando">Trabajando</option>
-                <option value="espera">Espera</option>
-            </select>
-            <div class="activity-bar-container"><div class="activity-bar"></div></div>
-        `;
+    function setupEventListeners() {
+        toolButtons.forEach(btn => {
+            btn.addEventListener('click', () => setActiveTool(btn));
+        });
+
+        grid.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('grid-cell')) return;
+
+            const cell = e.target;
+            const { row, col } = cell.dataset;
+            
+            if (activeTool.type === 'delete') {
+                deleteTaskAt(parseInt(row), parseInt(col));
+            } else {
+                addTask(parseInt(row), parseInt(col));
+            }
+        });
     }
 
-    function addRow() {
-        const tableBody = document.getElementById('manMachineChart').querySelector('tbody');
-        const newRow = tableBody.insertRow();
-        newRow.id = `row-${rowCounter}`;
+    function setActiveTool(button) {
+        toolButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
         
-        let rowHTML = `
-            <td><input type="text" placeholder="Descripción..."></td>
-            <td><input type="number" value="1" min="0" step="0.1" oninput="updateChart()"></td>
-            <td>${createStatusSelector('hombre', rowCounter)}</td>
-        `;
-        for (let i = 1; i <= machineCount; i++) {
-            rowHTML += `<td>${createStatusSelector('maquina' + i, rowCounter)}</td>`;
-        }
-        rowHTML += `<td><button class="btn btn-delete" onclick="deleteRow(${rowCounter})">X</button></td>`;
-        
-        newRow.innerHTML = rowHTML;
-        rowCounter++;
-        updateChart();
-    }
-
-    function deleteRow(rowIndex) {
-        document.getElementById(`row-${rowIndex}`).remove();
-        updateChart();
-    }
-
-    function updateChart() {
-        const rows = document.getElementById('manMachineChart').querySelector('tbody').rows;
-        
-        let totalTime = 0;
-        let totalHombreTrabajando = 0;
-        let machineWorkingTimes = new Array(machineCount + 1).fill(0);
-
-        for (const row of rows) {
-            const time = parseFloat(row.cells[1].querySelector('input').value) || 0;
-            totalTime += time;
-
-            const selectors = row.querySelectorAll('select');
-            selectors.forEach(selector => {
-                const entity = selector.dataset.entity;
-                const status = selector.value;
-                const barContainer = selector.nextElementSibling;
-                barContainer.style.height = `${20 + time * 5}px`;
-                barContainer.querySelector('.activity-bar').className = `activity-bar ${status}`;
-
-                if (status === 'trabajando') {
-                    if (entity === 'hombre') {
-                        totalHombreTrabajando += time;
-                    } else if (entity.startsWith('maquina')) {
-                        const machineIndex = parseInt(entity.replace('maquina', ''));
-                        machineWorkingTimes[machineIndex] += time;
-                    }
-                }
-            });
-        }
-        
-        // Actualizar totales
-        document.getElementById('total-time').innerText = totalTime.toFixed(2);
-        const hombreUtil = totalTime > 0 ? (totalHombreTrabajando / totalTime * 100).toFixed(1) : 0;
-        document.getElementById('total-hombre').innerText = `${totalHombreTrabajando.toFixed(2)} (${hombreUtil}%)`;
-        
-        for (let i = 1; i <= machineCount; i++) {
-            const machineTime = machineWorkingTimes[i];
-            const machineUtil = totalTime > 0 ? (machineTime / totalTime * 100).toFixed(1) : 0;
-            document.getElementById(`total-maquina-${i}`).innerText = `${machineTime.toFixed(2)} (${machineUtil}%)`;
+        if (button.id === 'btn-delete') {
+            activeTool = { type: 'delete' };
+            grid.style.cursor = 'crosshair';
+        } else {
+            activeTool = {
+                type: 'task',
+                task: button.dataset.task,
+                entity: button.dataset.entity
+            };
+            grid.style.cursor = 'pointer';
         }
     }
+
+    function addTask(startRow, col) {
+        const durationStr = prompt(`Duración de la tarea "${activeTool.task}" (en minutos/filas):`, "3");
+        const duration = parseInt(durationStr);
+        if (isNaN(duration) || duration <= 0) return;
+
+        const newTask = {
+            id: Date.now(),
+            task: activeTool.task,
+            entity: activeTool.entity,
+            col,
+            startRow,
+            duration,
+        };
+        
+        // Asignar a la columna correcta (Hombre o Máquina)
+        let targetCol = col;
+        if (newTask.entity === 'hombre') targetCol = 0;
+        else if (newTask.entity === 'maquina') {
+            if (col === 0) {
+                alert('La tarea de "Maquinado" solo puede asignarse a una columna de Máquina.');
+                return;
+            }
+            targetCol = col;
+        }
+        
+        newTask.col = targetCol;
+
+        // Validar si el espacio está ocupado
+        for(let i=0; i < duration; i++){
+            if(isOccupied(startRow + i, targetCol)){
+                alert('El espacio de tiempo ya está ocupado. No se puede añadir la tarea.');
+                return;
+            }
+        }
+        
+        tasks.push(newTask);
+        render();
+    }
+    
+    function isOccupied(row, col){
+        return tasks.some(t => t.col === col && row >= t.startRow && row < t.startRow + t.duration);
+    }
+
+    function deleteTaskAt(row, col) {
+        tasks = tasks.filter(t => !(t.col === col && row >= t.startRow && row < t.startRow + t.duration));
+        render();
+    }
+    
+    function render() {
+        // Limpiar bloques de tareas existentes
+        document.querySelectorAll('.task-block').forEach(block => block.remove());
+
+        // Dibujar cada tarea
+        tasks.forEach(task => {
+            const block = document.createElement('div');
+            block.className = 'task-block';
+            block.style.gridColumn = task.col + 1;
+            block.style.gridRow = `${task.startRow + 2} / span ${task.duration}`;
+            block.style.position = 'relative'; // Reset position within grid cell
+            block.style.top = `calc(${task.startRow} * var(--cell-size))`;
+            block.style.left = `calc(${task.col} * (100% / ${COLUMNS.length}))`;
+            block.style.height = `calc(${task.duration} * var(--cell-size))`;
+            block.style.backgroundColor = `var(--task-${task.task})`;
+            block.textContent = `${task.task.charAt(0).toUpperCase() + task.task.slice(1)}`;
+            
+            // Usamos un contenedor diferente para los bloques para que no interfieran con los clics del grid
+            document.body.appendChild(block);
+            const gridRect = grid.getBoundingClientRect();
+            const bodyRect = document.body.getBoundingClientRect();
+            block.style.position = 'absolute';
+            block.style.top = `calc(${gridRect.top - bodyRect.top} + var(--cell-size) * ${task.startRow + 1}px)`;
+            block.style.left = `calc(${gridRect.left - bodyRect.left} + ${task.col} * (100% / ${COLUMNS.length}))`;
+        });
+        
+        updateTotals();
+    }
+    
+    function updateTotals() {
+        const totalsTable = document.getElementById('totals-table');
+        let totals = {};
+        COLUMNS.forEach((col, index) => {
+            totals[index] = { working: 0, idle: 0, name: col };
+        });
+
+        tasks.forEach(task => {
+            if (task.task === 'idle') {
+                totals[task.col].idle += task.duration;
+            } else {
+                totals[task.col].working += task.duration;
+            }
+        });
+
+        let tableHTML = `
+            <tr style="background-color: var(--header-bg); color: white;">
+                <th>Recurso</th><th>Tiempo Trabajando</th><th>Tiempo de Espera</th><th>Tiempo Total</th><th>% Utilización</th>
+            </tr>`;
+        
+        Object.values(totals).forEach(data => {
+            const totalTime = data.working + data.idle;
+            const utilization = TOTAL_TIME_UNITS > 0 ? (data.working / TOTAL_TIME_UNITS * 100).toFixed(1) : 0;
+            tableHTML += `
+                <tr style="text-align: center; border-bottom: 1px solid #ddd;">
+                    <td><strong>${data.name}</strong></td>
+                    <td>${data.working} min</td>
+                    <td>${data.idle} min</td>
+                    <td>${totalTime} min</td>
+                    <td style="font-weight: bold; color: ${utilization > 75 ? 'green' : 'orange'};">${utilization}%</td>
+                </tr>
+            `;
+        });
+        totalsTable.innerHTML = tableHTML;
+    }
+
+    // Iniciar la aplicación
+    initialize();
 </script>
-
 </body>
 </html>
