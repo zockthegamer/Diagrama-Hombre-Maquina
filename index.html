@@ -1,324 +1,890 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Diagrama Hombre-Máquina Avanzado</title>
-  <style>
-    :root {
-      --borde-color: #dee2e6;
-      --fondo-gris: #f8f9fa;
-      --azul-principal: #0d6efd;
-      --rojo-peligro: #dc3545;
-      --texto-claro: #fff;
-      --gris-oscuro: #6c757d;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--fondo-gris);
-      color: #212529;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
-    main {
-      width: 100%;
-      max-width: 950px;
-      background-color: #fff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h2, h3 {
-      border-bottom: 2px solid var(--borde-color);
-      padding-bottom: 10px;
-      margin-top: 0;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Diagrama Hombre-Máquina — Avanzado</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --muted:#6c757d;
+    --accent:#0d6efd; --danger:#dc3545;
+    --border:#dee2e6;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); color:#222}
+  .app{max-width:1600px;margin:18px auto;padding:18px;background:var(--card);border-radius:10px;box-shadow:0 4px 22px rgba(0,0,0,0.06)}
+  h1{margin:0 0 12px}
+  .row{display:flex;gap:12px;align-items:flex-start}
+  .col{flex:1}
+  .panel{background:#fff;border:1px solid var(--border);padding:12px;border-radius:8px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,button{font-size:14px}
+  button{cursor:pointer;padding:8px 10px;border-radius:6px;border:none;color:#fff}
+  .btn-primary{background:var(--accent)}
+  .btn-danger{background:var(--danger)}
+  .btn-secondary{background:var(--muted); color:#fff}
+  #acciones-disponibles{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .accion-wrapper{position:relative;display:inline-block;}
+  .btn-delete-action{
+    position:absolute; top:-8px; right:-8px; background:var(--danger); color:white;
+    border-radius:50%; width:18px; height:18px; font-size:12px; line-height:18px;
+    text-align:center; cursor:pointer; border:1px solid white;
+  }
 
-    .seccion { margin-bottom: 25px; padding: 20px; border: 1px solid var(--borde-color); border-radius: 5px; }
-    .control-grupo, .accion-grupo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
-    input[type="number"], input[type="text"], input[type="color"] { padding: 8px 12px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 1rem; }
-    input#duracionAccion { width: 80px; }
-    button { padding: 8px 15px; border: none; border-radius: 4px; color: var(--texto-claro); font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-    button:hover { opacity: 0.85; }
-    .btn-principal { background-color: var(--azul-principal); }
-    .btn-rojo { background-color: var(--rojo-peligro); }
-    .btn-secundario { background-color: var(--gris-oscuro); }
-    #acciones-disponibles { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+  /* tabla */
+  .tabla-contenedor{overflow:auto;border:1px solid var(--border);border-radius:6px;margin-top:12px;position:relative}
+  table{border-collapse:collapse;width:100%;transform-origin:top left}
+  thead th{position:sticky;top:0;background:#f1f3f5;padding:8px;border:1px solid var(--border); cursor:pointer;}
+  td,th{min-width:72px;padding:6px;text-align:center;border:1px solid var(--border)}
+  tbody td:first-child{background:#fafafa;font-weight:600}
+  .celda-inactiva{background-image:repeating-linear-gradient(45deg, rgba(220,53,69,0.06), rgba(220,53,69,0.06) 8px, transparent 8px, transparent 16px)}
+  /* tooltip */
+  #tooltip{position:fixed;background:#222;color:#fff;padding:6px 8px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:2000;font-size:13px}
 
-    .tabla-contenedor { max-height: 600px; overflow-y: auto; border: 1px solid var(--borde-color); }
-    table { width: 100%; border-collapse: collapse; text-align: center; }
-    th, td { border: 1px solid var(--borde-color); padding: 5px; min-width: 80px; height: 25px; font-size: 0.9rem; }
-    td[data-accion] { font-weight: bold; font-size: 0.8em; vertical-align: middle; cursor: pointer; }
-    thead th { position: sticky; top: 0; background-color: #e9ecef; }
-    tbody td:first-child { font-weight: bold; background-color: var(--fondo-gris); }
-    .celda-inactiva {
-      background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.08), rgba(220, 53, 69, 0.08) 8px, transparent 8px, transparent 16px);
-    }
+  /* modal */
+  .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:2000}
+  .modal .card{background:#fff;padding:16px;border-radius:10px;min-width:300px;max-width:420px}
+  .modal input, .modal select{width:100%;padding:8px;margin-top:8px;border:1px solid var(--border);border-radius:6px}
 
-    /* Modal para renombrar acción */
-    #modalEditar {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 999;
-    }
-    #modalContenido {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      width: 90%;
-      max-width: 420px;
-    }
-    #modalContenido input {
-      padding: 8px;
-      font-size: 1rem;
-      margin-bottom: 10px;
-      width: 100%;
-      box-sizing: border-box;
-      border: 1px solid var(--borde-color);
-      border-radius: 6px;
-    }
+  /* small utility */
+  .small{font-size:13px;color:var(--muted)}
+  .flex{display:flex;gap:8px;align-items:center}
+  .divider{height:1px;background:var(--border);margin:8px 0;border-radius:2px}
 
-    #tooltip {
-      position: absolute;
-      visibility: hidden;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      border-radius: 6px;
-      padding: 5px 8px;
-      z-index: 10;
-      opacity: 0;
-      transition: opacity 0.15s;
-      font-size: 0.85rem;
-    }
-  </style>
+  /* drag cue */
+  .drag-handle{cursor:grab;font-weight:700}
+
+  /* patterns: using background images for stripes/dots */
+  .pattern-stripes{background-image:repeating-linear-gradient(135deg, rgba(0,0,0,0.08) 0 6px, transparent 6px 12px)}
+  .pattern-dots{background-image:radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px);background-size:8px 8px}
+
+  /* highlight row during animation */
+  .highlight-row{outline:3px solid rgba(13,110,253,0.18);}
+
+  /* responsiveness */
+  @media (max-width:900px){ .row{flex-direction:column} }
+</style>
 </head>
 <body>
-  <div id="tooltip"></div>
-  <main>
-    <h2>Diagrama Hombre-Máquina Avanzado</h2>
+<div id="tooltip"></div>
+<div class="app">
+  <h1>Diagrama Hombre-Máquina — Avanzado</h1>
 
-    <div class="seccion">
-      <h3>Configuración</h3>
-      <div class="control-grupo">
-        <label for="minutos">Minutos Totales:</label>
-        <input type="number" id="minutos" value="60">
-        <button id="btnGenerar" class="btn-principal">Generar / Reiniciar</button>
-        <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
+  <div class="row">
+    <div class="col" style="flex-basis:320px;max-width:360px">
+      <div class="panel">
+        <h3>Controles</h3>
+        <div class="controls">
+          <label class="small">Minutos: <input id="minutos" type="number" value="60" style="width:80px;margin-left:6px"></label>
+          <button id="btnGenerar" class="btn-primary">Generar</button>
+          <button id="btnAgregarMaquina" class="btn-primary">+ Máquina</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <h4>Crear acción</h4>
+        <div class="controls">
+          <input id="nombreAccion" placeholder="Nombre" />
+          <input id="duracionAccion" type="number" value="1" style="width:70px" min="1" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="colorAccion" type="color" value="#0d6efd" />
+          <button id="btnCrearAccion" class="btn-primary">Crear</button>
+        </div>
+
+        <div id="acciones-disponibles" style="margin-top:12px"></div>
+
+        <div class="divider"></div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="btnGuardar" class="btn-secondary">💾 Guardar JSON</button>
+          <button id="btnCargar" class="btn-secondary">📂 Cargar JSON</button>
+          <button id="btnExportPNG" class="btn-secondary">🖼️ PNG</button>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button id="btnUndo" class="btn-secondary">↶ Deshacer</button>
+          <button id="btnRedo" class="btn-secondary">↷ Rehacer</button>
+          <button id="btnCopy" class="btn-secondary">Copiar</button>
+          <button id="btnPaste" class="btn-secondary">Pegar</button>
+          <button id="btnSplit" class="btn-secondary">Dividir</button>
+        </div>
+
+        <div style="margin-top:10px">
+          <label class="small">Zoom: <input id="zoomRange" type="range" min="50" max="150" value="100"></label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <h4>Compartir / Autosave</h4>
+          <div style="display:flex;gap:8px">
+            <button id="btnShare" class="btn-secondary">🔗 Generar Link</button>
+            <button id="btnRestore" class="btn-secondary">♻️ Restaurar Autosave</button>
+            <button id="btnClear" class="btn-danger">🗑️ Borrar</button>
+          </div>
+        </div>
       </div>
-      <div class="control-grupo">
-        <button id="btnGuardar" class="btn-secundario">💾 Guardar Diagrama</button>
-        <button id="btnCargar" class="btn-secundario">📂 Cargar Diagrama</button>
-        <input type="file" id="inputCargar" accept=".json" style="display: none;">
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h3>Tabla</h3>
+        <div class="tabla-contenedor" id="tablaWrapper" style="height:70vh;overflow:auto">
+          <table id="tabla-actividades">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:8px" class="small">Nota: haz click en cualquier parte de un bloque para editarlo. Arrastra por su título para moverlo.</div>
       </div>
-    </div>
-    
-    <div class="seccion">
-      <h3>Acciones</h3>
-      <div class="accion-grupo">
-        <input type="text" id="nombreAccion" placeholder="Nombre de acción">
-        <input type="number" id="duracionAccion" placeholder="Min" min="1" value="1" title="Duración en minutos">
-        <input type="color" id="colorAccion" value="#4caf50">
-        <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
-        <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
-      </div>
-      <div id="acciones-disponibles"></div>
-    </div>
 
-    <div class="seccion">
-      <h3>Análisis de Actividad</h3>
-      <div id="analisis-container"><p>Genera la tabla para ver el análisis.</p></div>
-    </div>
-
-    <div class="tabla-contenedor">
-      <table id="tabla-actividades">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </main>
-
-  <!-- Modal -->
-  <div id="modalEditar">
-    <div id="modalContenido">
-      <h3>Editar nombre de la acción</h3>
-      <input type="text" id="inputNuevoNombre"/>
-      <div style="margin-top:12px;">
-        <button id="btnGuardarNombre" class="btn-principal">Guardar</button>
-        <button id="btnCancelarNombre" class="btn-rojo">Cancelar</button>
+      <div class="panel" style="margin-top:12px">
+        <h3>Análisis</h3>
+        <div id="analisis-container"></div>
+        <canvas id="chartCanvas" width="300" height="200" style="display:block;margin-top:8px;border:1px solid var(--border)"></canvas>
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    const tabla = document.getElementById('tabla-actividades');
-    const thead = tabla.querySelector('thead');
-    const tbody = tabla.querySelector('tbody');
-    const inputMinutos = document.getElementById('minutos');
-    const btnGenerar = document.getElementById('btnGenerar');
-    const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
-    const btnCrearAccion = document.getElementById('btnCrearAccion');
-    const inputNombreAccion = document.getElementById('nombreAccion');
-    const inputDuracionAccion = document.getElementById('duracionAccion');
-    const inputColorAccion = document.getElementById('colorAccion');
-    const divAcciones = document.getElementById('acciones-disponibles');
-    const btnModoEliminar = document.getElementById('btnModoEliminar');
-    const divAnalisis = document.getElementById('analisis-container');
+<div class="modal" id="modalEditar">
+  <div class="card">
+    <h3>Editar bloque</h3>
+    <div class="small">Editar solo el bloque seleccionado</div>
+    <input id="modalNombre" placeholder="Nombre" />
+    <input id="modalDuracion" type="number" min="1" placeholder="Duración (min)" />
+    <input id="modalColor" type="color" />
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="modalGuardar" class="btn-primary">Guardar</button>
+      <button id="modalCancelar" class="btn-danger">Cancelar</button>
+      <button id="modalBorrar" class="btn-secondary">Borrar bloque</button>
+    </div>
+  </div>
+</div>
 
-    const modalEditar = document.getElementById('modalEditar');
-    const inputNuevoNombre = document.getElementById('inputNuevoNombre');
-    const btnGuardarNombre = document.getElementById('btnGuardarNombre');
-    const btnCancelarNombre = document.getElementById('btnCancelarNombre');
+<input id="fileInput" type="file" accept=".json" style="display:none">
 
-    let columnas = ['Hombre'];
-    let acciones = [];
-    let accionActual = null;
-    let modoEliminar = false;
-    let nombreAccionEditando = null;
-    let blockIdEditando = null;
+<script>
+/* --------------------------
+  Estado y utilidades
+---------------------------*/
+const tabla = document.getElementById('tabla-actividades');
+const thead = tabla.querySelector('thead');
+const tbody = tabla.querySelector('tbody');
+const minutosInput = document.getElementById('minutos');
+const btnGenerar = document.getElementById('btnGenerar');
+const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
+const accionesDiv = document.getElementById('acciones-disponibles');
+const btnCrearAccion = document.getElementById('btnCrearAccion');
+const inputNombreAccion = document.getElementById('nombreAccion');
+const inputDuracionAccion = document.getElementById('duracionAccion');
+const inputColorAccion = document.getElementById('colorAccion');
 
-    // Generar tabla
-    function generarTabla() {
-      thead.innerHTML = '';
-      tbody.innerHTML = '';
-      const minutosTotales = parseInt(inputMinutos.value) || 0;
-      if (minutosTotales <= 0) return;
-      const filaCabecera = document.createElement('tr');
-      filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
-      thead.appendChild(filaCabecera);
-      for (let i = 1; i <= minutosTotales; i++) {
-        const fila = document.createElement('tr');
-        fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
-        tbody.appendChild(fila);
-      }
-      actualizarAnalisis();
+const btnGuardar = document.getElementById('btnGuardar');
+const btnCargar = document.getElementById('btnCargar');
+const fileInput = document.getElementById('fileInput');
+const btnExportPNG = document.getElementById('btnExportPNG');
+
+const btnUndo = document.getElementById('btnUndo');
+const btnRedo = document.getElementById('btnRedo');
+const btnCopy = document.getElementById('btnCopy');
+const btnPaste = document.getElementById('btnPaste');
+const btnSplit = document.getElementById('btnSplit');
+
+const zoomRange = document.getElementById('zoomRange');
+const btnShare = document.getElementById('btnShare');
+const btnRestore = document.getElementById('btnRestore');
+const btnClear = document.getElementById('btnClear');
+
+const modal = document.getElementById('modalEditar');
+const modalNombre = document.getElementById('modalNombre');
+const modalDuracion = document.getElementById('modalDuracion');
+const modalColor = document.getElementById('modalColor');
+const modalGuardar = document.getElementById('modalGuardar');
+const modalCancelar = document.getElementById('modalCancelar');
+const modalBorrar = document.getElementById('modalBorrar');
+
+const tooltip = document.getElementById('tooltip');
+const analisisContainer = document.getElementById('analisis-container');
+const chartCanvas = document.getElementById('chartCanvas');
+
+let primerEncabezado = 'Minuto';
+let columnas = ['Hombre']; // inicialmente
+let acciones = []; // lista de acciones definidas: {nombre,duracion,color}
+let accionActual = null;
+
+let historyStack = [];
+let redoStack = [];
+const HISTORY_LIMIT = 60;
+
+let clipboardBlock = null;
+let dragState = null;
+
+/* ---------- helpers ---------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8) }
+function saveHistory(){
+  const snapshot = getState();
+  historyStack.push(JSON.stringify(snapshot));
+  if(historyStack.length>HISTORY_LIMIT) historyStack.shift();
+  redoStack = []; // clear redo
+  localStorage.setItem('autoSave', JSON.stringify(snapshot));
+}
+function undo(){ if(historyStack.length<=1) return; const cur = historyStack.pop(); redoStack.push(cur); const prev = JSON.parse(historyStack[historyStack.length-1]); loadState(prev, true) }
+function redo(){ if(redoStack.length===0) return; const state = JSON.parse(redoStack.pop()); historyStack.push(JSON.stringify(state)); loadState(state, true) }
+
+function getContrastingTextColor(hex){
+  if(!hex) return 'white';
+  if(hex.startsWith('#')) hex = hex.slice(1);
+  const r=parseInt(hex.substr(0,2),16);
+  const g=parseInt(hex.substr(2,2),16);
+  const b=parseInt(hex.substr(4,2),16);
+  const yiq = (r*299 + g*587 + b*114)/1000;
+  return yiq>=128 ? 'black' : 'white';
+}
+
+/* ---------- tabla: generar y repoblar ---------- */
+function generarTabla(isLoadingState = false){
+  thead.innerHTML=''; tbody.innerHTML='';
+  const minutos = parseInt(minutosInput.value)||0;
+  if(minutos<=0) return;
+  const trHead = document.createElement('tr');
+  trHead.innerHTML = `<th>${primerEncabezado}</th>` + columnas.map(c=>`<th>${c}</th>`).join('');
+  thead.appendChild(trHead);
+  for(let i=1;i<=minutos;i++){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i}</td>` + columnas.map(()=>`<td class="celda-inactiva"></td>`).join('');
+    tbody.appendChild(tr);
+  }
+  aplicarBordes();
+  actualizarAnalisis();
+  if (!isLoadingState) {
+    saveHistory();
+  }
+}
+
+/* ---------- UI acciones (lista) ---------- */
+function renderAcciones(){
+  accionesDiv.innerHTML='';
+  acciones.forEach((acc, idx)=>{
+    const wrapper = document.createElement('div');
+    wrapper.className = 'accion-wrapper';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-secondary';
+    btn.style.background = acc.color;
+    btn.style.border = '2px solid transparent';
+    btn.style.color = getContrastingTextColor(acc.color);
+    btn.textContent = `${acc.nombre} (${acc.duracion}m)`;
+    btn.onclick = ()=>{ accionActual = acc; Array.from(accionesDiv.querySelectorAll('.btn-secondary')).forEach(b=>b.style.borderColor='transparent'); btn.style.borderColor='#000' }
+    btn.ondblclick = ()=>{
+      const nuevo = prompt('Editar nombre acción (global):', acc.nombre);
+      if(nuevo){ acc.nombre = nuevo; renderAcciones(); }
     }
-
-    function actualizarAnalisis() {
-      divAnalisis.innerHTML = '';
-      const minutosTotales = parseInt(inputMinutos.value) || 0;
-      columnas.forEach((nombre, indiceColumna) => {
-        let celdasActivas = 0;
-        for (const fila of tbody.rows) {
-          if (!fila.cells[indiceColumna+1].classList.contains('celda-inactiva')) {
-            celdasActivas++;
-          }
-        }
-        const tiempoOcioso = minutosTotales - celdasActivas;
-        const porcActividad = (celdasActivas / minutosTotales) * 100;
-        const p = document.createElement('p');
-        p.innerHTML = `<b>${nombre}:</b> ${porcActividad.toFixed(1)}% actividad (${celdasActivas} min), ${tiempoOcioso} min ocioso`;
-        divAnalisis.appendChild(p);
-      });
-    }
-
-    function crearNuevaAccion(nombre, duracion, color) {
-      if (!nombre) return;
-      const nuevaAccion = { nombre, duracion, color };
-      acciones.push(nuevaAccion);
-      const btn = document.createElement('button');
-      btn.textContent = `${nombre} (${duracion}m)`;
-      btn.style.backgroundColor = color;
-      btn.onclick = () => { accionActual = nuevaAccion; };
-      divAcciones.appendChild(btn);
-      inputNombreAccion.value = '';
-      inputDuracionAccion.value = 1;
-    }
-
-    // Bordes solo externos de bloque
-    function aplicarBordes() {
-      // reset bordes
-      for (const fila of tbody.rows) {
-        for (const celda of fila.cells) {
-          celda.style.border = '1px solid var(--borde-color)';
-        }
-      }
-      const bloques = {};
-      tbody.querySelectorAll('td[data-block-id]').forEach(c => {
-        const id = c.dataset.blockId;
-        if (!bloques[id]) bloques[id] = [];
-        bloques[id].push(c);
-      });
-      Object.values(bloques).forEach(celdas => {
-        celdas.sort((a,b)=>a.parentElement.rowIndex-b.parentElement.rowIndex);
-        const primera=celdas[0], ultima=celdas[celdas.length-1];
-        celdas.forEach(c=>{
-          c.style.borderLeft='2px solid black';
-          c.style.borderRight='2px solid black';
-          c.style.borderTop='none';
-          c.style.borderBottom='none';
+    
+    const deleteBtn = document.createElement('div');
+    deleteBtn.className = 'btn-delete-action';
+    deleteBtn.textContent = '×';
+    deleteBtn.title = 'Borrar esta acción';
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm(`¿Seguro que quieres borrar la acción "${acc.nombre}"? Esto la eliminará de todo el diagrama.`)) {
+        document.querySelectorAll(`td[data-accion="${acc.nombre}"]`).forEach(td => {
+          limpiarCelda(td);
         });
-        primera.style.borderTop='2px solid black';
-        ultima.style.borderBottom='2px solid black';
-      });
-    }
+        acciones.splice(idx, 1);
+        renderAcciones();
+        saveHistory();
+      }
+    };
+    
+    wrapper.appendChild(btn);
+    wrapper.appendChild(deleteBtn);
+    accionesDiv.appendChild(wrapper);
+  });
+}
 
-    // Eventos de pintar/editar
-    tabla.addEventListener('click', e=>{
-      const celda=e.target;
-      if(celda.tagName!=='TD'||celda.cellIndex===0)return;
-      if(celda.dataset.blockId){
-        nombreAccionEditando=celda.dataset.accion;
-        blockIdEditando=celda.dataset.blockId;
-        inputNuevoNombre.value=nombreAccionEditando;
-        modalEditar.style.display='flex';
-        return;
+/* ---------- pintar bloque (usa blockId) ---------- */
+function pintarBloque(startRowIndex, colIndex, acc){
+  const filas = Array.from(tbody.rows);
+  const dur = acc.duracion || 1;
+  const middle = Math.floor((dur-1)/2);
+  const blockId = uid();
+  for(let i=0;i<dur;i++){
+    const r = startRowIndex + i;
+    if(r>=filas.length) break;
+    const td = filas[r].cells[colIndex];
+    td.className = '';
+    td.style.background = acc.color;
+    td.style.color = getContrastingTextColor(acc.color);
+
+    td.dataset.accion = acc.nombre;
+    td.dataset.blockId = blockId;
+    td.dataset.color = acc.color;
+    td.textContent = (i===middle) ? acc.nombre : '';
+    if(i===middle){
+      td.classList.add('drag-handle');
+    }
+  }
+  aplicarBordes();
+  actualizarAnalisis();
+  saveHistory();
+}
+
+/* ---------- limpiar bloque por celda ---------- */
+function limpiarCelda(celda){
+  if(celda.dataset.blockId){
+    const bid = celda.dataset.blockId;
+    document.querySelectorAll(`td[data-block-id="${bid}"]`).forEach(c=>{
+      c.className='celda-inactiva';
+      c.style.background=''; c.style.color=''; c.textContent=''; 
+      c.removeAttribute('data-accion'); c.removeAttribute('data-block-id'); c.removeAttribute('data-color'); 
+      c.classList.remove('drag-handle');
+    });
+  } else {
+    celda.className='celda-inactiva';
+    celda.style.background=''; celda.style.color=''; celda.textContent=''; 
+    celda.removeAttribute('data-accion');
+  }
+  aplicarBordes();
+  actualizarAnalisis();
+}
+
+/* ---------- aplicar bordes externos únicos por bloque ---------- */
+function aplicarBordes(){
+  const rows = Array.from(tbody.rows);
+  rows.forEach(r=>{
+    Array.from(r.cells).forEach(td=>{
+      td.style.border = `1px solid ${getComputedStyle(document.documentElement).getPropertyValue('--border') || '#dee2e6'}`;
+    });
+  });
+
+  const bloques = {};
+  document.querySelectorAll('td[data-block-id]').forEach(td=>{
+    const id = td.dataset.blockId;
+    if(!bloques[id]) bloques[id] = [];
+    bloques[id].push(td);
+  });
+
+  Object.values(bloques).forEach(celdas=>{
+    celdas.sort((a,b)=>a.parentElement.rowIndex - b.parentElement.rowIndex);
+    const first = celdas[0], last = celdas[celdas.length-1];
+    celdas.forEach(td=>{
+      td.style.borderLeft = '2px solid black';
+      td.style.borderRight = '2px solid black';
+      td.style.borderTop = 'none';
+      td.style.borderBottom = 'none';
+    });
+    first.style.borderTop = '2px solid black';
+    last.style.borderBottom = '2px solid black';
+  });
+}
+
+/* ---------- eventos tabla: click, hover, drag ---------- */
+tabla.addEventListener('click', (ev)=>{
+  const td = ev.target;
+  if(td.tagName !== 'TD' || td.cellIndex === 0) return;
+
+  if(td.dataset.blockId){
+    openModalForBlock(td.dataset.blockId);
+    return;
+  }
+
+  if(!accionActual){ alert('Selecciona una acción en "Acciones disponibles"'); return; }
+
+  const filaIndex = Array.from(tbody.rows).indexOf(td.parentElement);
+  if(filaIndex<0) return;
+  pintarBloque(filaIndex, td.cellIndex, accionActual);
+});
+
+tabla.addEventListener('mousemove', (e)=>{
+  const el = e.target;
+  if(el.tagName==='TD' && el.dataset.accion){
+    tooltip.style.left = (e.pageX+12)+'px';
+    tooltip.style.top = (e.pageY+12)+'px';
+    tooltip.innerHTML = `<b>${el.dataset.accion}</b><br>Fila de inicio: ${el.parentElement.rowIndex}`;
+    tooltip.style.opacity = 1;
+  } else {
+    tooltip.style.opacity = 0;
+  }
+});
+
+tabla.addEventListener('mousedown', (e)=>{
+  const td = e.target;
+  if(td.tagName==='TD' && td.classList.contains('drag-handle') && td.dataset.blockId){
+    dragState = { 
+      bid: td.dataset.blockId, 
+      colIndex: td.cellIndex, 
+      startY: e.clientY,
+      hasMoved: false
+    };
+    document.body.style.cursor = 'grabbing';
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (dragState) {
+    if (Math.abs(e.clientY - dragState.startY) > 5) {
+      dragState.hasMoved = true;
+    }
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (dragState && dragState.hasMoved) {
+    const targetCell = document.elementFromPoint(e.clientX, e.clientY);
+
+    if (targetCell && targetCell.tagName === 'TD' && targetCell.parentElement.parentElement.tagName === 'TBODY' && targetCell.cellIndex > 0) {
+      const targetRowIndex = Array.from(tbody.rows).indexOf(targetCell.parentElement);
+      const targetColIndex = targetCell.cellIndex;
+      const { bid } = dragState;
+      const blockCels = Array.from(document.querySelectorAll(`td[data-block-id="${bid}"]`));
+
+      if (blockCels.length > 0) {
+        const aName = blockCels[0].dataset.accion;
+        const actionObj = acciones.find(a => a.nombre === aName) || {
+          nombre: aName,
+          duracion: blockCels.length,
+          color: blockCels[0].dataset.color || blockCels[0].style.backgroundColor,
+        };
+
+        blockCels.forEach(c => limpiarCelda(c));
+        pintarBloque(targetRowIndex, targetColIndex, actionObj);
       }
-      if(!accionActual){alert('Selecciona una acción');return;}
-      const filas=tbody.rows;
-      const filaIndex=Array.from(filas).indexOf(celda.parentElement);
-      const colIndex=celda.cellIndex;
-      const duracion=accionActual.duracion||1;
-      const middleIndex=Math.floor((duracion-1)/2);
-      const blockId=Date.now()+"-"+Math.random();
-      for(let i=0;i<duracion;i++){
-        const f=filaIndex+i;
-        if(f>=filas.length)break;
-        const c=filas[f].cells[colIndex];
-        c.className='';
-        c.style.backgroundColor=accionActual.color;
-        c.style.color='white';
-        c.dataset.accion=accionActual.nombre;
-        c.dataset.blockId=blockId;
-        c.textContent=(i===middleIndex)?accionActual.nombre:'';
-      }
-      aplicarBordes();
+    }
+  }
+  dragState = null;
+  document.body.style.cursor = '';
+});
+
+thead.addEventListener('click', (e) => {
+  const th = e.target;
+  if (th.tagName !== 'TH') return;
+
+  const nombreActual = th.textContent;
+  const nuevoNombre = prompt('Editar nombre de la columna:', nombreActual);
+
+  if (nuevoNombre && nuevoNombre.trim() !== '') {
+    const nombreRecortado = nuevoNombre.trim();
+    th.textContent = nombreRecortado;
+
+    if (th.cellIndex === 0) {
+      primerEncabezado = nombreRecortado;
+    } else {
+      columnas[th.cellIndex - 1] = nombreRecortado;
       actualizarAnalisis();
+    }
+    saveHistory();
+  }
+});
+
+/* ---------- modal operations ---------- */
+let editingBlockId = null;
+function openModalForBlock(bid){
+  editingBlockId = bid;
+  const cells = Array.from(document.querySelectorAll(`td[data-block-id="${bid}"]`));
+  if(!cells.length) return;
+  const midCell = cells[Math.floor(cells.length/2)];
+  modalNombre.value = midCell.dataset.accion || '';
+  modalColor.value = midCell.dataset.color || '#0d6efd';
+  modalDuracion.value = cells.length;
+  modal.style.display = 'flex';
+  modalNombre.focus();
+}
+modalCancelar.onclick = ()=>{ modal.style.display='none'; editingBlockId=null }
+modalGuardar.onclick = ()=>{
+  const nuevoNombre = modalNombre.value.trim();
+  if(!editingBlockId){ modal.style.display='none'; return; }
+  
+  const cells = Array.from(document.querySelectorAll(`td[data-block-id="${editingBlockId}"]`));
+  if(!cells.length){ modal.style.display='none'; editingBlockId=null; return; }
+  
+  const nuevaDuracion = parseInt(modalDuracion.value) || cells.length;
+  const nuevoColor = modalColor.value;
+  
+  const startIndex = Array.from(tbody.rows).indexOf(cells[0].parentElement);
+  const colIndex = cells[0].cellIndex;
+  
+  cells.forEach(c => limpiarCelda(c));
+  
+  const actionName = nuevoNombre || 'Accion';
+  const actionObj = acciones.find(a=>a.nombre===actionName);
+  
+  let accObj;
+  if(actionObj){
+    actionObj.color = nuevoColor; actionObj.duracion = nuevaDuracion;
+    accObj = actionObj;
+  } else {
+    accObj = {nombre:actionName, duracion:nuevaDuracion, color:nuevoColor};
+    acciones.push(accObj);
+    renderAcciones();
+  }
+
+  pintarBloque(startIndex, colIndex, accObj);
+  modal.style.display='none';
+  editingBlockId=null;
+};
+modalBorrar.onclick = ()=>{
+  if(!editingBlockId || !confirm('¿Borrar este bloque?')) return;
+  
+  document.querySelectorAll(`td[data-block-id="${editingBlockId}"]`).forEach(c => limpiarCelda(c));
+  modal.style.display='none';
+  editingBlockId=null;
+  saveHistory();
+}
+
+/* ---------- crear acciones globales ---------- */
+btnCrearAccion.onclick = ()=>{
+  const name = inputNombreAccion.value.trim();
+  if(!name){ alert('Ingresa un nombre para la acción.'); return; }
+  const dur = parseInt(inputDuracionAccion.value) || 1;
+  const color = inputColorAccion.value || '#0d6efd';
+  acciones.push({nombre:name,duracion:dur,color});
+  renderAcciones();
+  inputNombreAccion.value=''; inputDuracionAccion.value='1';
+  saveHistory();
+}
+
+/* ---------- agregar maquina ---------- */
+btnAgregarMaquina.onclick = ()=>{
+  const nombreNuevaMaquina = `M${columnas.length}`;
+  columnas.push(nombreNuevaMaquina);
+
+  const th = document.createElement('th');
+  th.textContent = nombreNuevaMaquina;
+  thead.querySelector('tr').appendChild(th);
+
+  tbody.querySelectorAll('tr').forEach(fila => {
+    const td = document.createElement('td');
+    td.className = 'celda-inactiva';
+    fila.appendChild(td);
+  });
+
+  actualizarAnalisis();
+  saveHistory();
+}
+
+/* ---------- guardar / cargar JSON ---------- */
+btnGuardar.onclick = ()=>{
+  const state = getState();
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state,null,2));
+  const a = document.createElement('a');
+  a.href = dataStr; a.download = 'diagrama.json'; document.body.appendChild(a); a.click(); a.remove();
+}
+btnCargar.onclick = ()=> fileInput.click();
+fileInput.onchange = e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ()=> {
+    try{
+      const state = JSON.parse(reader.result);
+      loadState(state);
+      saveHistory();
+    }catch(err){ alert('Error al cargar el archivo JSON.'); console.error(err) }
+  };
+  reader.readAsText(f);
+}
+
+/* ---------- export PNG (Fiel a la vista) ---------- */
+btnExportPNG.onclick = () => {
+  const tablaParaExportar = document.getElementById('tabla-actividades');
+  tablaParaExportar.style.outline = '2px solid var(--accent)';
+  
+  html2canvas(tablaParaExportar, {
+    useCORS: true, logging: false,
+    onclone: (doc) => {
+      doc.getElementById('tabla-actividades').style.transform = '';
+    }
+  }).then(canvas => {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'diagrama-hombre-maquina.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    tablaParaExportar.style.outline = 'none';
+  });
+};
+
+/* ---------- copy / paste / split ---------- */
+btnCopy.onclick = ()=>{
+  if(lastClickedBlockId){
+    clipboardBlock = captureBlock(lastClickedBlockId);
+    alert('Bloque copiado.');
+  } else alert('Haz click en un bloque para copiarlo.');
+};
+btnPaste.onclick = ()=>{
+  if(!clipboardBlock) return alert('No hay nada en el portapapeles.');
+  const target = lastSelectedCell || tbody.rows[0].cells[1];
+  if(!target) return;
+  const filaIndex = Array.from(tbody.rows).indexOf(target.parentElement);
+  pintarBlockFromData(filaIndex, target.cellIndex, clipboardBlock);
+  saveHistory();
+};
+btnSplit.onclick = ()=>{
+  if(!lastClickedBlockId) return alert('Haz click en un bloque para dividirlo.');
+  const bid = lastClickedBlockId;
+  const cells = Array.from(document.querySelectorAll(`td[data-block-id="${bid}"]`));
+  if(cells.length<=1) return alert('El bloque es demasiado pequeño para ser dividido.');
+  const midIndex = Math.floor(cells.length/2);
+  const first = cells.slice(0,midIndex);
+  const second = cells.slice(midIndex);
+  const id1 = uid(), id2 = uid();
+  first.forEach(c=>{ c.dataset.blockId = id1; });
+  second.forEach(c=>{ c.dataset.blockId = id2; });
+  aplicarBordes();
+  saveHistory();
+}
+
+/* helper capture block */
+function captureBlock(bid){
+  const cells = Array.from(document.querySelectorAll(`td[data-block-id="${bid}"]`));
+  if(!cells.length) return null;
+  return {
+    nombre: cells[0].dataset.accion,
+    color: cells[0].dataset.color || cells[0].style.backgroundColor,
+    duracion: cells.length
+  };
+}
+function pintarBlockFromData(startRow, colIndex, data){
+  const filas = Array.from(tbody.rows);
+  const dur = data.duracion || 1;
+  const blockId = uid();
+  for(let i=0;i<dur;i++){
+    const r = startRow + i;
+    if(r>=filas.length) break;
+    const td = filas[r].cells[colIndex];
+    td.className=''; 
+    td.style.background = data.color; 
+    td.style.color = getContrastingTextColor(data.color);
+    td.dataset.accion = data.nombre;
+    td.dataset.blockId = blockId;
+    td.dataset.color = data.color;
+    td.textContent = (i===Math.floor((dur-1)/2))?data.nombre:'';
+  }
+  aplicarBordes();
+  actualizarAnalisis();
+}
+
+/* ---------- undo / redo ---------- */
+btnUndo.onclick = ()=>undo();
+btnRedo.onclick = ()=>redo();
+
+/* ---------- zoom control ---------- */
+zoomRange.oninput = ()=> {
+  tabla.style.transform = `scale(${zoomRange.value/100})`;
+}
+
+/* ---------- share link ---------- */
+btnShare.onclick = () => {
+  const state = getState();
+  const jsonString = JSON.stringify(state);
+  const compressed = LZString.compressToEncodedURIComponent(jsonString);
+  const url = location.origin + location.pathname + '#s=' + compressed;
+  prompt('Copia este link corto y compártelo:', url);
+}
+
+/* ---------- autosave restore / clear ---------- */
+btnRestore.onclick = ()=>{
+  const saved = localStorage.getItem('autoSave');
+  if(!saved) return alert('No hay datos guardados para restaurar.');
+  try{ const state = JSON.parse(saved); loadState(state); saveHistory(); }catch(e){ alert('No se pudo restaurar.'); }
+};
+btnClear.onclick = ()=>{ if(confirm('¿Seguro que quieres borrar todo el diagrama?')){ primerEncabezado = 'Minuto'; columnas=['Hombre']; acciones=[]; generarTabla(); renderAcciones(); localStorage.removeItem('autoSave'); saveHistory(); } }
+
+/* ---------- state helpers ---------- */
+function getState(){
+  const tablaData = Array.from(tbody.rows).map(tr=> Array.from(tr.cells).slice(1).map(td=>{
+    return td.dataset.blockId ? {blockId: td.dataset.blockId, accion: td.dataset.accion, color: td.dataset.color} : null;
+  }));
+  return { primerEncabezado, columnas, acciones, minutos: parseInt(minutosInput.value)||0, tablaData };
+}
+
+function loadState(state, skipHistory=false){
+  if(!state) return;
+  primerEncabezado = state.primerEncabezado || 'Minuto';
+  columnas = state.columnas || ['Hombre'];
+  acciones = state.acciones || [];
+  minutosInput.value = state.minutos || 60;
+  
+  generarTabla(true); 
+
+  if(state.tablaData){
+    const rows = Array.from(tbody.rows);
+    state.tablaData.forEach((filaData, rIdx)=>{
+      if (filaData) {
+        filaData.forEach((cellData, cIdx)=>{
+          if(cellData && rows[rIdx] && rows[rIdx].cells[cIdx+1]){
+            const td = rows[rIdx].cells[cIdx+1];
+            td.className=''; 
+            td.style.background = cellData.color || '#fff'; 
+            td.style.color = getContrastingTextColor(cellData.color||'#fff');
+            td.dataset.accion = cellData.accion;
+            td.dataset.blockId = cellData.blockId || uid();
+            td.dataset.color = cellData.color || '';
+          }
+        });
+      }
     });
 
-    btnGuardarNombre.onclick=()=>{
-      const nuevo=inputNuevoNombre.value.trim();
-      if(nuevo&&blockIdEditando){
-        tbody.querySelectorAll(`td[data-block-id="${blockIdEditando}"]`).forEach(c=>{
-          c.dataset.accion=nuevo;
-          if(c.textContent===nombreAccionEditando)c.textContent=nuevo;
-        });
+    const groups = {};
+    tbody.querySelectorAll('td[data-block-id]').forEach(td=>{
+      const id = td.dataset.blockId;
+      if(!groups[id]) groups[id]=[];
+      groups[id].push(td);
+    });
+    Object.values(groups).forEach(g=>{
+      g.sort((a,b)=>a.parentElement.rowIndex - b.parentElement.rowIndex);
+      const mid = Math.floor((g.length-1)/2);
+      g.forEach((c,i)=> {
+        c.textContent = (i===mid)? c.dataset.accion : '';
+        if (i===mid) c.classList.add('drag-handle');
+      });
+    });
+  }
+  renderAcciones();
+  aplicarBordes();
+  actualizarAnalisis();
+  if(!skipHistory) saveHistory();
+}
+
+/* ---------- analysis and chart ---------- */
+function actualizarAnalisis(){
+  analisisContainer.innerHTML = '';
+  const minutos = parseInt(minutosInput.value)||0;
+  if (minutos === 0) return;
+  
+  columnas.forEach((col, idxCol)=>{
+    let used = 0;
+    if(tbody.rows.length > 0 && tbody.rows[0].cells.length > idxCol + 1) {
+      for(let r=0;r<tbody.rows.length;r++){
+        const td = tbody.rows[r].cells[idxCol+1];
+        if(td && td.dataset.blockId) used++;
       }
-      modalEditar.style.display='none';
-      aplicarBordes();
-    };
-    btnCancelarNombre.onclick=()=>modalEditar.style.display='none';
+    }
+    const tiempoOcioso = minutos - used;
+    const p = document.createElement('p');
+    p.innerHTML = `<b>${col}:</b> ${((used/minutos)*100 || 0).toFixed(1)}% activo (${used} min) — ocioso ${tiempoOcioso} min`;
+    analisisContainer.appendChild(p);
+  });
 
-    btnGenerar.onclick=()=>{generarTabla();aplicarBordes();};
-    btnAgregarMaquina.onclick=()=>{
-      const nombre=`M${columnas.length}`;
-      columnas.push(nombre);
-      generarTabla();
-    };
-    btnCrearAccion.onclick=()=>{
-      crearNuevaAccion(inputNombreAccion.value,parseInt(inputDuracionAccion.value)||1,inputColorAccion.value);
-    };
+  const counts = {};
+  tbody.querySelectorAll('td[data-accion]').forEach(td=>{
+    const name = td.dataset.accion || 'SinNombre';
+    counts[name] = (counts[name]||0) + 1;
+  });
+  const labels = Object.keys(counts);
+  const data = labels.map(l=>counts[l]);
+  drawPieChart(chartCanvas, labels, data);
+}
 
+function drawPieChart(canvas, labels, data){
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const total = data.reduce((a,b)=>a+b,0);
+  if(total===0){
+    ctx.fillStyle='#666'; ctx.font='14px Arial'; ctx.fillText('No hay datos', 10, 20); return;
+  }
+  let start=0;
+  const cx = canvas.width/2;
+  const cy = canvas.height/2;
+  const radius = Math.min(cx,cy) - 10;
+  labels.forEach((lab,i)=>{
+    const val = data[i];
+    const slice = val/total * Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy, radius, start, start+slice);
+    ctx.closePath();
+    ctx.fillStyle = stringToColor(lab);
+    ctx.fill();
+    start += slice;
+  });
+  // legend
+  ctx.font='12px Arial';
+  labels.forEach((lab,i)=>{
+    ctx.fillStyle = stringToColor(lab);
+    ctx.fillRect(8, 8 + i*16 + 6, 10, 10);
+    ctx.fillStyle = '#000';
+    ctx.fillText(`${lab} (${data[i]} min)`, 24, 16 + i*16);
+  });
+}
+
+function stringToColor(str){
+  let h = 0; for(let i=0;i<str.length;i++) h = str.charCodeAt(i) + ((h<<5)-h);
+  const c = (h & 0x00FFFFFF).toString(16).toUpperCase();
+  return '#'+ ('00000'.substring(0,6 - c.length) + c);
+}
+
+/* ---------- keyboard shortcuts ---------- */
+let lastClickedBlockId = null;
+let lastSelectedCell = null;
+document.addEventListener('keydown', (e)=>{
+  const targetTagName = e.target.tagName.toLowerCase();
+  if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') {
+    return;
+  }
+
+  if(e.ctrlKey && e.key==='z'){ e.preventDefault(); undo(); }
+  if(e.ctrlKey && e.key==='y'){ e.preventDefault(); redo(); }
+  if(e.ctrlKey && e.key==='c'){ e.preventDefault(); if(lastClickedBlockId) clipboardBlock = captureBlock(lastClickedBlockId); }
+  if(e.ctrlKey && e.key==='v'){ e.preventDefault(); btnPaste.click(); }
+  if(e.key==='Delete' || e.key === 'Backspace'){ if(lastClickedBlockId){ document.querySelectorAll(`td[data-block-id="${lastClickedBlockId}"]`).forEach(c=>limpiarCelda(c)); saveHistory(); } }
+});
+
+// track last clicked block and selected cell
+tabla.addEventListener('click', (e)=>{
+  const td = e.target;
+  if(td.tagName==='TD'){
+    lastSelectedCell = td;
+    lastClickedBlockId = td.dataset.blockId || null;
+  }
+});
+
+/* ---------- initial load & hash support ---------- */
+function init() {
+  btnGenerar.onclick = generarTabla;
+
+  try {
+    if (location.hash.startsWith('#s=')) { // Chequea el nuevo formato comprimido
+      const compressed = location.hash.replace('#s=', '');
+      const jsonString = LZString.decompressFromEncodedURIComponent(compressed);
+      const state = JSON.parse(jsonString);
+      loadState(state);
+      return;
+    } else if (location.hash.startsWith('#state=')) { // Mantiene compatibilidad con el formato antiguo
+      const json = decodeURIComponent(location.hash.replace('#state=', ''));
+      const state = JSON.parse(json);
+      loadState(state);
+      return;
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar el estado desde el hash.', e);
+  }
+
+  // Carga por defecto o desde el guardado local
+  acciones = [
+    { nombre: 'Trabajo', duracion: 5, color: '#0d6efd' },
+    { nombre: 'Espera', duracion: 3, color: '#ffc107' }
+  ];
+  renderAcciones();
+
+  const saved = localStorage.getItem('autoSave');
+  if (saved) {
+    try { const s = JSON.parse(saved); loadState(s, true); } catch (e) { generarTabla(); }
+  } else {
     generarTabla();
-  </script>
+  }
+  saveHistory();
+}
+init();
+
+window.addEventListener('beforeunload', ()=>{ localStorage.setItem('autoSave', JSON.stringify(getState())); });
+
+</script>
 </body>
 </html>
