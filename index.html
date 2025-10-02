@@ -1,3 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama Hombre-Máquina Avanzado</title>
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        :root {
+            --borde-color: #dee2e6;
+            --fondo-gris: #f8f9fa;
+            --azul-principal: #0d6efd;
+            --rojo-peligro: #dc3545;
+            --texto-claro: #fff;
+            --gris-oscuro: #6c757d;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--fondo-gris);
+            color: #212529;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        main {
+            width: 100%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            border-bottom: 2px solid var(--borde-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* --- SECCIONES Y CONTROLES --- */
+        .seccion { margin-bottom: 25px; padding: 20px; border: 1px solid var(--borde-color); border-radius: 5px; }
+        .control-grupo, .accion-grupo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        input[type="number"], input[type="text"], input[type="color"] { padding: 8px 12px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 1rem; }
+        input#duracionAccion { width: 80px; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; color: var(--texto-claro); font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.85; }
+        .btn-principal { background-color: var(--azul-principal); }
+        .btn-rojo { background-color: var(--rojo-peligro); }
+        .btn-secundario { background-color: var(--gris-oscuro); }
+        #acciones-disponibles { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* --- TABLA DE ACTIVIDADES --- */
+        .tabla-contenedor { max-height: 600px; overflow-y: auto; border: 1px solid var(--borde-color); }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { border: 1px solid var(--borde-color); padding: 5px; min-width: 80px; height: 25px; font-size: 0.9rem; }
+        td[data-accion] { font-weight: bold; font-size: 0.8em; vertical-align: middle; }
+        thead th { position: sticky; top: 0; background-color: #e9ecef; }
+        tbody td:first-child { font-weight: bold; background-color: var(--fondo-gris); }
+        td { cursor: pointer; }
+        .celda-inactiva {
+            background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
+        }
+
+        /* --- NUEVO: ESTILOS PARA EL TOOLTIP --- */
+        #tooltip {
+            position: absolute;
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="tooltip"></div>
+
+    <main>
+        <h2>Diagrama Hombre-Máquina Avanzado</h2>
+
+        <div class="seccion">
+            <h3>Configuración</h3>
+            <div class="control-grupo">
+                <label for="minutos">Minutos Totales:</label>
+                <input type="number" id="minutos" value="60">
+                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar</button>
+                <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
+            </div>
+            <div class="control-grupo">
+                 <button id="btnGuardar" class="btn-secundario">💾 Guardar Diagrama</button>
+                 <button id="btnCargar" class="btn-secundario">📂 Cargar Diagrama</button>
+                 <input type="file" id="inputCargar" accept=".json" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="seccion">
+            <h3>Acciones</h3>
+            <div class="accion-grupo">
+                <input type="text" id="nombreAccion" placeholder="Nombre de acción">
+                <input type="number" id="duracionAccion" placeholder="Min" min="1" value="1" title="Duración en minutos">
+                <input type="color" id="colorAccion" value="#4caf50">
+                <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
+                <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
+            </div>
+            <div id="acciones-disponibles"></div>
+        </div>
+
+        <div class="seccion">
+            <h3>Análisis de Actividad</h3>
+            <div id="analisis-container"><p>Genera la tabla para ver el análisis.</p></div>
+        </div>
+
+        <div class="tabla-contenedor">
+            <table id="tabla-actividades">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+
     <script>
     // --- ELEMENTOS DEL DOM ---
     const tooltip = document.getElementById('tooltip');
@@ -28,7 +152,7 @@
 
     // --- FUNCIONES ---
 
-    function generarTabla() { /* ... (Sin cambios) ... */
+    function generarTabla() {
         thead.innerHTML = '';
         tbody.innerHTML = '';
         const minutosTotales = parseInt(inputMinutos.value) || 0;
@@ -44,7 +168,7 @@
         actualizarAnalisis();
     }
 
-    function actualizarAnalisis() { /* ... (Sin cambios) ... */
+    function actualizarAnalisis() {
         divAnalisis.innerHTML = '';
         const minutosTotales = parseInt(inputMinutos.value) || 0;
         if (minutosTotales === 0) {
@@ -68,7 +192,7 @@
         });
     }
     
-    function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) { /* ... (Sin cambios) ... */
+    function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) {
         if (!nombre) {
             alert('Por favor, introduce un nombre para la acción.');
             return;
@@ -101,7 +225,7 @@
         }
     }
 
-    function agregarMaquina() { /* ... (Sin cambios) ... */
+    function agregarMaquina() {
         const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
         if (nombreMaquina && !columnas.includes(nombreMaquina)) {
             columnas.push(nombreMaquina);
@@ -111,7 +235,7 @@
         }
     }
     
-    function eliminarAccion(accionAEliminar, botonAEliminar) { /* ... (Sin cambios) ... */
+    function eliminarAccion(accionAEliminar, botonAEliminar) {
         for (const fila of tbody.rows) {
             for (const celda of fila.cells) {
                 if (celda.dataset.accion === accionAEliminar.nombre) {
@@ -127,7 +251,8 @@
         actualizarAnalisis();
     }
 
-    function getContrastingTextColor(hexColor) { /* ... (Sin cambios) ... */
+    function getContrastingTextColor(hexColor) {
+        if (!hexColor) return 'black';
         if (hexColor.startsWith('#')) hexColor = hexColor.slice(1);
         const r = parseInt(hexColor.substr(0, 2), 16);
         const g = parseInt(hexColor.substr(2, 2), 16);
@@ -224,7 +349,6 @@
         actualizarAnalisis();
     });
 
-    // NUEVO: Eventos para el tooltip ... (Sin cambios)
     tabla.addEventListener('mouseover', (event) => {
         if (event.target.tagName === 'TD' && event.target.dataset.accion) {
             tooltip.textContent = event.target.dataset.accion;
@@ -246,7 +370,7 @@
         crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
     });
 
-    btnModoEliminar.addEventListener('click', () => { /* ... (Sin cambios) ... */
+    btnModoEliminar.addEventListener('click', () => {
         modoEliminar = !modoEliminar;
         if (modoEliminar) {
             btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
@@ -260,7 +384,6 @@
         }
     });
 
-    // NUEVO: Lógica para Guardar y Cargar ... (Sin cambios, pero he revisado que funcione con los nuevos cambios)
     btnGuardar.addEventListener('click', () => {
         const estado = {
             columnas: columnas,
@@ -290,70 +413,35 @@
     inputCargar.addEventListener('change', (event) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const estadoCargado = JSON.parse(e.target.result);
-            
-            columnas = estadoCargado.columnas;
-            acciones = estadoCargado.acciones;
-            inputMinutos.value = estadoCargado.minutosTotales;
+            try {
+                const estadoCargado = JSON.parse(e.target.result);
+                
+                columnas = estadoCargado.columnas;
+                acciones = estadoCargado.acciones;
+                inputMinutos.value = estadoCargado.minutosTotales;
 
-            divAcciones.innerHTML = '';
-            inicializarAcciones(); 
-            
-            generarTabla();
-            const filas = tbody.rows;
-            const bloquesProcesados = {}; // Para no recalcular texto y bordes
+                divAcciones.innerHTML = '';
+                inicializarAcciones(); 
+                
+                generarTabla();
+                const filas = tbody.rows;
+                const bloquesProcesados = {}; // Para no recalcular texto y bordes
 
-            estadoCargado.tablaData.forEach((filaData, indiceFila) => {
-                filaData.forEach((celdaData, indiceColumna) => {
-                    if (celdaData && celdaData.accion) {
-                        const celda = filas[indiceFila].cells[indiceColumna + 1];
-                        celda.className = '';
-                        celda.style.backgroundColor = celdaData.color;
-                        celda.style.color = getContrastingTextColor(celdaData.color);
-                        celda.dataset.accion = celdaData.accion;
-                        celda.dataset.blockId = celdaData.blockId;
-                        
-                        // Reconstruir bordes y texto al cargar
-                        if (celdaData.blockId && !bloquesProcesados[celdaData.blockId]) {
-                            const celdasDelBloque = Array.from(tbody.querySelectorAll(`[data-block-id="${celdaData.blockId}"]`));
-                            const duracion = celdasDelBloque.length;
-                            const middleIndex = Math.floor((duracion - 1) / 2);
+                estadoCargado.tablaData.forEach((filaData, indiceFila) => {
+                    filaData.forEach((celdaData, indiceColumna) => {
+                        if (celdaData && celdaData.accion) {
+                            const celda = filas[indiceFila].cells[indiceColumna + 1];
+                            celda.className = '';
+                            celda.style.backgroundColor = celdaData.color;
+                            celda.style.color = getContrastingTextColor(celdaData.color);
+                            celda.dataset.accion = celdaData.accion;
+                            celda.dataset.blockId = celdaData.blockId;
                             
-                            celdasDelBloque.forEach((celdaBloque, index) => {
-                                celdaBloque.textContent = (index === middleIndex) ? celdaData.accion : '';
-                                celdaBloque.style.borderLeft = '2px solid black';
-                                celdaBloque.style.borderRight = '2px solid black';
-                                if (index === 0) celdaBloque.style.borderTop = '2px solid black';
-                                if (index === duracion - 1) celdaBloque.style.borderBottom = '2px solid black';
-                            });
-                            bloquesProcesados[celdaData.blockId] = true;
-                        }
-                    }
-                });
-            });
-            actualizarAnalisis();
-        };
-        reader.readAsText(event.target.files[0]);
-        inputCargar.value = '';
-    });
-    
-    // --- INICIALIZACIÓN DE LA APP ---
-    function inicializarAcciones() {
-        crearNuevaAccion('Borrador', 1, '#6c757d', true); // Crear el Borrador
-        acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
-    }
-
-    function inicializar() {
-        crearNuevaAccion('Trabajo', 1, '#0d6efd');
-        crearNuevaAccion('Espera', 1, '#ffc107');
-        divAcciones.innerHTML = ''; // Limpiar acciones de ejemplo
-        inicializarAcciones();
-        generarTabla();
-        if (divAcciones.children[1]) {
-            divAcciones.children[1].click();
-        }
-    }
-    
-    inicializar();
-        </script>
-        
+                            // Reconstruir bordes y texto al cargar
+                            if (celdaData.blockId && !bloquesProcesados[celdaData.blockId]) {
+                                const celdasDelBloque = Array.from(tbody.querySelectorAll(`[data-block-id="${celdaData.blockId}"]`));
+                                const duracion = celdasDelBloque.length;
+                                const middleIndex = Math.floor((duracion - 1) / 2);
+                                
+                                celdasDelBloque.forEach((celdaBloque, index) => {
+                                    celdaBloque.textC
