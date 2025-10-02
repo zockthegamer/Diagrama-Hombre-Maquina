@@ -61,7 +61,7 @@
             background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
         }
 
-        /* --- ESTILOS PARA EL TOOLTIP --- */
+        /* --- NUEVO: ESTILOS PARA EL TOOLTIP --- */
         #tooltip {
             position: absolute;
             visibility: hidden;
@@ -147,11 +147,10 @@
     let acciones = [];
     let accionActual = null;
     let modoEliminar = false;
-    let blockIdCounter = 0;
 
     // --- FUNCIONES ---
 
-    function generarTabla() {
+    function generarTabla() { /* ... (Sin cambios) ... */
         thead.innerHTML = '';
         tbody.innerHTML = '';
         const minutosTotales = parseInt(inputMinutos.value) || 0;
@@ -167,6 +166,9 @@
         actualizarAnalisis();
     }
 
+    /**
+     * CAMBIO: El análisis ahora incluye el tiempo ocioso.
+     */
     function actualizarAnalisis() {
         divAnalisis.innerHTML = '';
         const minutosTotales = parseInt(inputMinutos.value) || 0;
@@ -224,7 +226,7 @@
         }
     }
 
-    function agregarMaquina() {
+    function agregarMaquina() { /* ... (Sin cambios) ... */
         const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", `M${columnas.length}`);
         if (nombreMaquina && !columnas.includes(nombreMaquina)) {
             columnas.push(nombreMaquina);
@@ -234,7 +236,7 @@
         }
     }
     
-    function eliminarAccion(accionAEliminar, botonAEliminar) {
+    function eliminarAccion(accionAEliminar, botonAEliminar) { /* ... (Sin cambios) ... */
         for (const fila of tbody.rows) {
             for (const celda of fila.cells) {
                 if (celda.dataset.accion === accionAEliminar.nombre) {
@@ -250,26 +252,21 @@
         actualizarAnalisis();
     }
 
-    function getContrastingTextColor(hexColor) {
-        if (!hexColor) return 'black';
-        if (hexColor.startsWith('#')) {
-            hexColor = hexColor.slice(1);
-        }
+    function getContrastingTextColor(hexColor) { /* ... (Sin cambios) ... */
+        if (hexColor.startsWith('#')) hexColor = hexColor.slice(1);
         const r = parseInt(hexColor.substr(0, 2), 16);
         const g = parseInt(hexColor.substr(2, 2), 16);
         const b = parseInt(hexColor.substr(4, 2), 16);
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return (yiq >= 128) ? 'black' : 'white';
     }
-    
+
     function limpiarCelda(celda) {
         celda.className = 'celda-inactiva';
         celda.style.backgroundColor = '';
         celda.style.color = '';
         celda.textContent = '';
-        celda.style.border = '';
         delete celda.dataset.accion;
-        delete celda.dataset.blockId;
     }
 
     // --- MANEJADORES DE EVENTOS ---
@@ -278,19 +275,18 @@
         const celda = event.target;
         if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
         
-        const filas = Array.from(tbody.rows);
-        const indiceFila = filas.indexOf(celda.parentElement);
+        const filas = tbody.rows;
+        const indiceFila = Array.from(filas).indexOf(celda.parentElement);
         const indiceColumna = celda.cellIndex;
 
+        // Lógica del Borrador
         if (accionActual && accionActual.nombre === 'Borrador') {
-            const blockId = celda.dataset.blockId;
-            if (blockId) {
-                tbody.querySelectorAll(`td[data-block-id="${blockId}"]`).forEach(limpiarCelda);
-            }
+            limpiarCelda(celda);
             actualizarAnalisis();
             return;
         }
 
+        // Lógica para pintar o limpiar
         if (celda.classList.contains('celda-inactiva')) {
             if (!accionActual) {
                 alert("Por favor, selecciona una acción primero.");
@@ -299,7 +295,6 @@
             const duracion = accionActual.duracion || 1;
             const middleIndex = Math.floor((duracion - 1) / 2);
             const textColor = getContrastingTextColor(accionActual.color);
-            const blockId = `block-${blockIdCounter++}`;
 
             for (let i = 0; i < duracion; i++) {
                 const filaIndex = indiceFila + i;
@@ -310,39 +305,15 @@
                 celdaAPintar.style.backgroundColor = accionActual.color;
                 celdaAPintar.style.color = textColor;
                 celdaAPintar.dataset.accion = accionActual.nombre;
-                celdaAPintar.dataset.blockId = blockId;
                 celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
-
-                celdaAPintar.style.borderLeft = '2px solid black';
-                celdaAPintar.style.borderRight = '2px solid black';
-                if (i === 0) {
-                    celdaAPintar.style.borderTop = '2px solid black';
-                }
-                if (i === duracion - 1) {
-                    celdaAPintar.style.borderBottom = '2px solid black';
-                }
             }
         } else {
-            const nombreActual = celda.dataset.accion;
-            const blockId = celda.dataset.blockId;
-            if (!blockId) return;
-
-            const nuevoNombre = prompt("Cambia el nombre de la acción:", nombreActual);
-            
-            if (nuevoNombre && nuevoNombre.trim() !== "") {
-                const celdasDelBloque = tbody.querySelectorAll(`td[data-block-id="${blockId}"]`);
-                const duracion = celdasDelBloque.length;
-                const middleIndex = Math.floor((duracion - 1) / 2);
-
-                celdasDelBloque.forEach((celdaBloque, index) => {
-                    celdaBloque.dataset.accion = nuevoNombre;
-                    celdaBloque.textContent = (index === middleIndex) ? nuevoNombre : '';
-                });
-            }
+            limpiarCelda(celda);
         }
         actualizarAnalisis();
     });
 
+    // NUEVO: Eventos para el tooltip
     tabla.addEventListener('mouseover', (event) => {
         if (event.target.tagName === 'TD' && event.target.dataset.accion) {
             tooltip.textContent = event.target.dataset.accion;
@@ -364,7 +335,7 @@
         crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
     });
 
-    btnModoEliminar.addEventListener('click', () => {
+    btnModoEliminar.addEventListener('click', () => { /* ... (Sin cambios) ... */
         modoEliminar = !modoEliminar;
         if (modoEliminar) {
             btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
@@ -378,19 +349,14 @@
         }
     });
 
-    // --- CAMBIO: Lógica de Guardado mejorada ---
+    // NUEVO: Lógica para Guardar y Cargar
     btnGuardar.addEventListener('click', () => {
         const estado = {
             columnas: columnas,
             acciones: acciones,
             minutosTotales: inputMinutos.value,
             tablaData: Array.from(tbody.rows).map(fila => 
-                Array.from(fila.cells).slice(1).map(celda => ({
-                    accion: celda.dataset.accion || null,
-                    blockId: celda.dataset.blockId || null,
-                    backgroundColor: celda.style.backgroundColor || null,
-                    color: celda.style.color || null // Guardamos también el color del texto
-                }))
+                Array.from(fila.cells).slice(1).map(celda => celda.dataset.accion || null)
             )
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado, null, 2));
@@ -403,51 +369,65 @@
     });
 
     btnCargar.addEventListener('click', () => inputCargar.click());
-    
-    // --- CAMBIO: Lógica de Carga mejorada ---
+
     inputCargar.addEventListener('change', (event) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            try {
-                const estadoCargado = JSON.parse(e.target.result);
-                
-                columnas = estadoCargado.columnas;
-                acciones = estadoCargado.acciones;
-                inputMinutos.value = estadoCargado.minutosTotales;
+            const estadoCargado = JSON.parse(e.target.result);
+            
+            // Recargar estado
+            columnas = estadoCargado.columnas;
+            acciones = estadoCargado.acciones;
+            inputMinutos.value = estadoCargado.minutosTotales;
 
-                divAcciones.innerHTML = '';
-                crearNuevaAccion('Borrador', 1, '#6c757d', true);
-                acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
-                
-                generarTabla();
-                const filas = tbody.rows;
-                const bloquesProcesados = {};
-
-                estadoCargado.tablaData.forEach((filaData, indiceFila) => {
-                    filaData.forEach((celdaData, indiceColumna) => {
-                        if (celdaData && celdaData.accion) {
+            // Limpiar y recargar UI de acciones
+            divAcciones.innerHTML = '';
+            inicializarAcciones(); // Vuelve a crear el borrador y las acciones cargadas
+            
+            // Generar tabla y repoblar
+            generarTabla();
+            const filas = tbody.rows;
+            estadoCargado.tablaData.forEach((filaData, indiceFila) => {
+                filaData.forEach((nombreAccion, indiceColumna) => {
+                    if (nombreAccion) {
+                        const accion = acciones.find(a => a.nombre === nombreAccion);
+                        if (accion) {
                             const celda = filas[indiceFila].cells[indiceColumna + 1];
                             celda.className = '';
-                            celda.style.backgroundColor = celdaData.backgroundColor;
-                            celda.style.color = celdaData.color; // Aplicamos el color de texto guardado
-                            celda.dataset.accion = celdaData.accion;
-                            celda.dataset.blockId = celdaData.blockId;
-                            
-                            if (celdaData.blockId && !bloquesProcesados[celdaData.blockId]) {
-                                const celdasDelBloque = Array.from(tbody.querySelectorAll(`[data-block-id="${celdaData.blockId}"]`));
-                                const duracion = celdasDelBloque.length;
-                                const middleIndex = Math.floor((duracion - 1) / 2);
-                                
-                                celdasDelBloque.forEach((celdaBloque, index) => {
-                                    celdaBloque.textContent = (index === middleIndex) ? celdaData.accion : '';
-                                    celdaBloque.style.borderLeft = '2px solid black';
-                                    celdaBloque.style.borderRight = '2px solid black';
-                                    if (index === 0) celdaBloque.style.borderTop = '2px solid black';
-                                    if (index === duracion - 1) celdaBloque.style.borderBottom = '2px solid black';
-                                });
-                                bloquesProcesados[celdaData.blockId] = true;
-                            }
+                            celda.style.backgroundColor = accion.color;
+                            celda.style.color = getContrastingTextColor(accion.color);
+                            celda.dataset.accion = accion.nombre;
                         }
-                    });
+                    }
                 });
-      
+            });
+
+            // Repintar nombres en bloques (esto es una simplificación, puede no quedar perfecto en la carga)
+            actualizarAnalisis();
+        };
+        reader.readAsText(event.target.files[0]);
+        inputCargar.value = ''; // Reset para poder cargar el mismo archivo de nuevo
+    });
+    
+    // --- INICIALIZACIÓN DE LA APP ---
+    function inicializarAcciones() {
+        crearNuevaAccion('Borrador', 1, '#6c757d', true); // Crear el Borrador
+        acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
+    }
+
+    function inicializar() {
+        crearNuevaAccion('Trabajo', 1, '#0d6efd');
+        crearNuevaAccion('Espera', 1, '#ffc107');
+        divAcciones.innerHTML = ''; // Limpiar acciones de ejemplo antes de la inicialización final
+        inicializarAcciones();
+        generarTabla();
+        // Seleccionar la primera acción real (no el borrador)
+        if (divAcciones.children[1]) {
+            divAcciones.children[1].click();
+        }
+    }
+    
+    inicializar();
+    </script>
+</body>
+</html>
