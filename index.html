@@ -61,7 +61,7 @@
             background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
         }
 
-        /* --- NUEVO: ESTILOS PARA EL TOOLTIP --- */
+        /* --- ESTILOS PARA EL TOOLTIP --- */
         #tooltip {
             position: absolute;
             visibility: hidden;
@@ -147,7 +147,6 @@
     let acciones = [];
     let accionActual = null;
     let modoEliminar = false;
-    // --- CAMBIO: Añadimos un contador para identificar bloques de acción únicos ---
     let blockIdCounter = 0;
 
     // --- FUNCIONES ---
@@ -253,7 +252,9 @@
 
     function getContrastingTextColor(hexColor) {
         if (!hexColor) return 'black';
-        if (hexColor.startsWith('#')) hexColor = hexColor.slice(1);
+        if (hexColor.startsWith('#')) {
+            hexColor = hexColor.slice(1);
+        }
         const r = parseInt(hexColor.substr(0, 2), 16);
         const g = parseInt(hexColor.substr(2, 2), 16);
         const b = parseInt(hexColor.substr(4, 2), 16);
@@ -261,20 +262,18 @@
         return (yiq >= 128) ? 'black' : 'white';
     }
     
-    // --- CAMBIO: La función ahora borra también los bordes y el ID del bloque ---
     function limpiarCelda(celda) {
         celda.className = 'celda-inactiva';
         celda.style.backgroundColor = '';
         celda.style.color = '';
         celda.textContent = '';
-        celda.style.border = ''; // Limpia todos los bordes a la vez
+        celda.style.border = '';
         delete celda.dataset.accion;
-        delete celda.dataset.blockId; // Elimina el identificador del bloque
+        delete celda.dataset.blockId;
     }
 
     // --- MANEJADORES DE EVENTOS ---
     
-    // --- CAMBIO RADICAL: Lógica de clic completamente nueva ---
     tabla.addEventListener('click', function(event) {
         const celda = event.target;
         if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
@@ -283,7 +282,6 @@
         const indiceFila = filas.indexOf(celda.parentElement);
         const indiceColumna = celda.cellIndex;
 
-        // Lógica del Borrador: Ahora borra el bloque entero
         if (accionActual && accionActual.nombre === 'Borrador') {
             const blockId = celda.dataset.blockId;
             if (blockId) {
@@ -293,7 +291,6 @@
             return;
         }
 
-        // Lógica para PINTAR un nuevo bloque
         if (celda.classList.contains('celda-inactiva')) {
             if (!accionActual) {
                 alert("Por favor, selecciona una acción primero.");
@@ -302,7 +299,7 @@
             const duracion = accionActual.duracion || 1;
             const middleIndex = Math.floor((duracion - 1) / 2);
             const textColor = getContrastingTextColor(accionActual.color);
-            const blockId = `block-${blockIdCounter++}`; // ID único para este bloque
+            const blockId = `block-${blockIdCounter++}`;
 
             for (let i = 0; i < duracion; i++) {
                 const filaIndex = indiceFila + i;
@@ -313,10 +310,9 @@
                 celdaAPintar.style.backgroundColor = accionActual.color;
                 celdaAPintar.style.color = textColor;
                 celdaAPintar.dataset.accion = accionActual.nombre;
-                celdaAPintar.dataset.blockId = blockId; // Asigna el ID del bloque
+                celdaAPintar.dataset.blockId = blockId;
                 celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
 
-                // Lógica para dibujar el borde del bloque
                 celdaAPintar.style.borderLeft = '2px solid black';
                 celdaAPintar.style.borderRight = '2px solid black';
                 if (i === 0) {
@@ -326,23 +322,21 @@
                     celdaAPintar.style.borderBottom = '2px solid black';
                 }
             }
-        // Lógica para RENOMBRAR un bloque existente
         } else {
             const nombreActual = celda.dataset.accion;
             const blockId = celda.dataset.blockId;
-            if (!blockId) return; // Si no tiene bloque, no hace nada
+            if (!blockId) return;
 
             const nuevoNombre = prompt("Cambia el nombre de la acción:", nombreActual);
             
-            // Si el usuario introduce un nombre nuevo y válido
             if (nuevoNombre && nuevoNombre.trim() !== "") {
                 const celdasDelBloque = tbody.querySelectorAll(`td[data-block-id="${blockId}"]`);
                 const duracion = celdasDelBloque.length;
                 const middleIndex = Math.floor((duracion - 1) / 2);
 
                 celdasDelBloque.forEach((celdaBloque, index) => {
-                    celdaBloque.dataset.accion = nuevoNombre; // Actualiza el nombre en el dataset
-                    celdaBloque.textContent = (index === middleIndex) ? nuevoNombre : ''; // Actualiza el texto visible
+                    celdaBloque.dataset.accion = nuevoNombre;
+                    celdaBloque.textContent = (index === middleIndex) ? nuevoNombre : '';
                 });
             }
         }
@@ -384,17 +378,18 @@
         }
     });
 
+    // --- CAMBIO: Lógica de Guardado mejorada ---
     btnGuardar.addEventListener('click', () => {
         const estado = {
             columnas: columnas,
             acciones: acciones,
             minutosTotales: inputMinutos.value,
-            // Guardamos más datos de la celda para una reconstrucción perfecta
             tablaData: Array.from(tbody.rows).map(fila => 
                 Array.from(fila.cells).slice(1).map(celda => ({
                     accion: celda.dataset.accion || null,
                     blockId: celda.dataset.blockId || null,
-                    color: celda.style.backgroundColor || null
+                    backgroundColor: celda.style.backgroundColor || null,
+                    color: celda.style.color || null // Guardamos también el color del texto
                 }))
             )
         };
@@ -409,7 +404,7 @@
 
     btnCargar.addEventListener('click', () => inputCargar.click());
     
-    // --- CAMBIO: Lógica de carga adaptada para reconstruir bordes y nombres personalizados ---
+    // --- CAMBIO: Lógica de Carga mejorada ---
     inputCargar.addEventListener('change', (event) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -421,27 +416,38 @@
                 inputMinutos.value = estadoCargado.minutosTotales;
 
                 divAcciones.innerHTML = '';
-                inicializarAcciones(); 
+                crearNuevaAccion('Borrador', 1, '#6c757d', true);
+                acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
                 
                 generarTabla();
                 const filas = tbody.rows;
-                const bloquesProcesados = {}; // Para no recalcular texto y bordes
+                const bloquesProcesados = {};
 
                 estadoCargado.tablaData.forEach((filaData, indiceFila) => {
                     filaData.forEach((celdaData, indiceColumna) => {
                         if (celdaData && celdaData.accion) {
                             const celda = filas[indiceFila].cells[indiceColumna + 1];
                             celda.className = '';
-                            celda.style.backgroundColor = celdaData.color;
-                            celda.style.color = getContrastingTextColor(celdaData.color);
+                            celda.style.backgroundColor = celdaData.backgroundColor;
+                            celda.style.color = celdaData.color; // Aplicamos el color de texto guardado
                             celda.dataset.accion = celdaData.accion;
                             celda.dataset.blockId = celdaData.blockId;
                             
-                            // Reconstruir bordes y texto al cargar
                             if (celdaData.blockId && !bloquesProcesados[celdaData.blockId]) {
                                 const celdasDelBloque = Array.from(tbody.querySelectorAll(`[data-block-id="${celdaData.blockId}"]`));
                                 const duracion = celdasDelBloque.length;
                                 const middleIndex = Math.floor((duracion - 1) / 2);
                                 
                                 celdasDelBloque.forEach((celdaBloque, index) => {
-                                    celdaBloque.textC
+                                    celdaBloque.textContent = (index === middleIndex) ? celdaData.accion : '';
+                                    celdaBloque.style.borderLeft = '2px solid black';
+                                    celdaBloque.style.borderRight = '2px solid black';
+                                    if (index === 0) celdaBloque.style.borderTop = '2px solid black';
+                                    if (index === duracion - 1) celdaBloque.style.borderBottom = '2px solid black';
+                                });
+                                bloquesProcesados[celdaData.blockId] = true;
+                            }
+                        }
+                    });
+                });
+      
