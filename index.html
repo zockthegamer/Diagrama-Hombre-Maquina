@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Diagrama Hombre-Máquina Avanzado</title>
     <style>
         :root {
@@ -54,10 +54,10 @@
         thead th { position: sticky; top: 0; background-color: #e9ecef; }
         tbody td:first-child { font-weight: bold; background-color: var(--fondo-gris); }
         .celda-inactiva {
-            background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
+            background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.08), rgba(220, 53, 69, 0.08) 8px, transparent 8px, transparent 16px);
         }
 
-        /* NUEVO: borde negro grueso */
+        /* Borde para las celdas del mismo bloque (estilo simple) */
         .borde-accion {
             border: 2px solid black !important;
         }
@@ -79,16 +79,37 @@
             border-radius: 10px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 420px;
         }
         #modalContenido input {
             padding: 8px;
             font-size: 1rem;
             margin-bottom: 10px;
-            width: 80%;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--borde-color);
+            border-radius: 6px;
+        }
+
+        /* Tooltip pequeño */
+        #tooltip {
+            position: absolute;
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 8px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.15s;
+            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
+    <div id="tooltip"></div>
     <main>
         <h2>Diagrama Hombre-Máquina Avanzado</h2>
 
@@ -132,19 +153,21 @@
         </div>
     </main>
 
-    <!-- Modal -->
+    <!-- Modal editar nombre -->
     <div id="modalEditar">
         <div id="modalContenido">
             <h3>Editar nombre de la acción</h3>
-            <input type="text" id="inputNuevoNombre">
-            <br>
-            <button id="btnGuardarNombre" class="btn-principal">Guardar</button>
-            <button id="btnCancelarNombre" class="btn-rojo">Cancelar</button>
+            <input type="text" id="inputNuevoNombre" />
+            <div style="margin-top:12px;">
+                <button id="btnGuardarNombre" class="btn-principal">Guardar</button>
+                <button id="btnCancelarNombre" class="btn-rojo">Cancelar</button>
+            </div>
         </div>
     </div>
 
     <script>
     // --- ELEMENTOS DEL DOM ---
+    const tooltip = document.getElementById('tooltip');
     const inputMinutos = document.getElementById('minutos');
     const btnGenerar = document.getElementById('btnGenerar');
     const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
@@ -162,20 +185,21 @@
     const btnCargar = document.getElementById('btnCargar');
     const inputCargar = document.getElementById('inputCargar');
 
-    // Modal elementos
+    // Modal
     const modalEditar = document.getElementById('modalEditar');
     const inputNuevoNombre = document.getElementById('inputNuevoNombre');
     const btnGuardarNombre = document.getElementById('btnGuardarNombre');
     const btnCancelarNombre = document.getElementById('btnCancelarNombre');
 
-    // --- ESTADO DE LA APLICACIÓN ---
+    // --- ESTADO ---
     let columnas = ['Hombre'];
-    let acciones = [];
+    let acciones = []; // {nombre, duracion, color}
     let accionActual = null;
     let modoEliminar = false;
     let nombreAccionEditando = null;
 
-    // --- FUNCIONES ---
+    // --- FUNCIONES --- 
+
     function generarTabla() {
         thead.innerHTML = '';
         tbody.innerHTML = '';
@@ -190,6 +214,7 @@
             tbody.appendChild(fila);
         }
         actualizarAnalisis();
+        aplicarBordes();
     }
 
     function actualizarAnalisis() {
@@ -216,37 +241,80 @@
         });
     }
 
+    function crearBotonAccion(objAccion, esHerramienta = false) {
+        const btnAccion = document.createElement('button');
+        btnAccion.textContent = esHerramienta ? objAccion.nombre : `${objAccion.nombre} (${objAccion.duracion}m)`;
+        btnAccion.style.backgroundColor = objAccion.color;
+        btnAccion.style.border = '2px solid transparent';
+        btnAccion.addEventListener('click', () => {
+            if (modoEliminar && !esHerramienta) {
+                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${objAccion.nombre}"?`)) {
+                    eliminarAccion(objAccion);
+                }
+            } else {
+                accionActual = objAccion;
+                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
+                btnAccion.style.borderColor = '#000';
+            }
+        });
+        return btnAccion;
+    }
+
     function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) {
         if (!nombre) {
             alert('Por favor, introduce un nombre para la acción.');
             return;
         }
         const nuevaAccion = { nombre, duracion, color };
-        if (!esHerramienta) {
-             acciones.push(nuevaAccion);
-        }
-        
-        const btnAccion = document.createElement('button');
-        btnAccion.textContent = esHerramienta ? nombre : `${nombre} (${duracion}m)`;
-        btnAccion.style.backgroundColor = color;
-        btnAccion.style.border = '2px solid transparent';
-        
-        btnAccion.addEventListener('click', () => {
-            if (modoEliminar && !esHerramienta) {
-                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"?`)) {
-                    eliminarAccion(nuevaAccion, btnAccion);
-                }
-            } else {
-                accionActual = nuevaAccion;
-                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
-                btnAccion.style.borderColor = '#000';
-            }
-        });
-        divAcciones.appendChild(btnAccion);
+        if (!esHerramienta) acciones.push(nuevaAccion);
+        const btn = crearBotonAccion(nuevaAccion, esHerramienta);
+        divAcciones.appendChild(btn);
         if (!esHerramienta) {
              inputNombreAccion.value = '';
              inputDuracionAccion.value = '1';
         }
+    }
+
+    function inicializarAcciones() {
+        // Limpiar UI luego volver a crear: Borrador + todas las acciones en `acciones`
+        divAcciones.innerHTML = '';
+        // Borrador (herramienta)
+        const objBorrador = { nombre: 'Borrador', duracion: 1, color: '#6c757d' };
+        const btnBorrador = crearBotonAccion(objBorrador, true);
+        divAcciones.appendChild(btnBorrador);
+
+        // Botones basados en `acciones`
+        acciones.forEach(acc => {
+            const btn = crearBotonAccion(acc, false);
+            divAcciones.appendChild(btn);
+        });
+    }
+
+    function eliminarAccion(accionAEliminar) {
+        // Limpiar celdas con esa acción
+        for (const fila of tbody.rows) {
+            for (const celda of fila.cells) {
+                if (celda.dataset.accion === accionAEliminar.nombre) {
+                    limpiarCelda(celda);
+                }
+            }
+        }
+        acciones = acciones.filter(a => a.nombre !== accionAEliminar.nombre);
+        // refrescar UI de acciones
+        inicializarAcciones();
+        if (accionActual && accionActual.nombre === accionAEliminar.nombre) accionActual = null;
+        actualizarAnalisis();
+        aplicarBordes();
+    }
+
+    function getContrastingTextColor(hexColor) {
+        if (!hexColor) return 'white';
+        if (hexColor.startsWith('#')) hexColor = hexColor.slice(1);
+        const r = parseInt(hexColor.substr(0, 2), 16);
+        const g = parseInt(hexColor.substr(2, 2), 16);
+        const b = parseInt(hexColor.substr(4, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? 'black' : 'white';
     }
 
     function limpiarCelda(celda) {
@@ -257,6 +325,8 @@
         delete celda.dataset.accion;
     }
 
+    // Aplica la clase borde a todas las celdas que pertenezcan a una misma acción
+    // (simple: aplica borde a cada celda del bloque).
     function aplicarBordes() {
         for (const fila of tbody.rows) {
             for (const celda of fila.cells) {
@@ -274,22 +344,40 @@
         });
     }
 
-    // --- EVENTOS ---
+    // --- FUNCIONALIDAD: AGREGAR MÁQUINA ---
+    function agregarMaquina() {
+        // Default sugerido M1, M2, ... según número actual de máquinas (excluye "Hombre")
+        const sugerencia = `M${columnas.length}`; // columnas incluye 'Hombre' al inicio
+        const nombreMaquina = prompt("Introduce el nombre de la nueva máquina:", sugerencia);
+        if (!nombreMaquina) return;
+        if (columnas.includes(nombreMaquina)) {
+            alert("Ese nombre ya existe.");
+            return;
+        }
+        columnas.push(nombreMaquina);
+        generarTabla();
+    }
+
+    // --- EVENTOS TABLA (pintar / editar nombre) ---
     tabla.addEventListener('click', function(event) {
         const celda = event.target;
         if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
 
+        // Si la celda ya pertenece a una acción → abrir modal para renombrar
         if (celda.dataset.accion) {
             nombreAccionEditando = celda.dataset.accion;
             inputNuevoNombre.value = nombreAccionEditando;
             modalEditar.style.display = 'flex';
+            inputNuevoNombre.focus();
             return;
         }
 
+        // Si es celda inactiva: pintar con la acción seleccionada
         const filas = tbody.rows;
         const indiceFila = Array.from(filas).indexOf(celda.parentElement);
         const indiceColumna = celda.cellIndex;
 
+        // Borrador es una herramienta que se selecciona entre botones; si está activa, limpiar
         if (accionActual && accionActual.nombre === 'Borrador') {
             limpiarCelda(celda);
             actualizarAnalisis();
@@ -304,12 +392,12 @@
             }
             const duracion = accionActual.duracion || 1;
             const middleIndex = Math.floor((duracion - 1) / 2);
-            const textColor = 'white';
+            const textColor = getContrastingTextColor(accionActual.color);
 
             for (let i = 0; i < duracion; i++) {
                 const filaIndex = indiceFila + i;
                 if (filaIndex >= filas.length) break;
-                
+
                 const celdaAPintar = filas[filaIndex].cells[indiceColumna];
                 celdaAPintar.className = '';
                 celdaAPintar.style.backgroundColor = accionActual.color;
@@ -318,22 +406,69 @@
                 celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
             }
         } else {
+            // Si ya estaba pintada (pero no abrimos modal) -> limpiarla (esto sucede si alguna configuración previa lo permitía)
             limpiarCelda(celda);
         }
         actualizarAnalisis();
         aplicarBordes();
     });
 
+    // Tooltip al pasar el mouse por celdas con acción
+    tabla.addEventListener('mouseover', (event) => {
+        if (event.target.tagName === 'TD' && event.target.dataset.accion) {
+            tooltip.textContent = event.target.dataset.accion;
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY + 10}px`;
+            tooltip.style.visibility = 'visible';
+            tooltip.style.opacity = 1;
+        }
+    });
+    tabla.addEventListener('mousemove', (event) => {
+        if (tooltip.style.visibility === 'visible') {
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY + 10}px`;
+        }
+    });
+    tabla.addEventListener('mouseout', () => {
+        tooltip.style.visibility = 'hidden';
+        tooltip.style.opacity = 0;
+    });
+
+    // --- Modal: guardar nuevo nombre ---
     btnGuardarNombre.addEventListener('click', () => {
         const nuevoNombre = inputNuevoNombre.value.trim();
-        if (nuevoNombre && nombreAccionEditando) {
-            tbody.querySelectorAll(`td[data-accion="${nombreAccionEditando}"]`).forEach(c => {
-                c.dataset.accion = nuevoNombre;
-                if (c.textContent === nombreAccionEditando) {
-                    c.textContent = nuevoNombre;
-                }
-            });
+        if (!nuevoNombre || !nombreAccionEditando) {
+            modalEditar.style.display = 'none';
+            return;
         }
+        // Evitar nombres duplicados
+        const existeEnAcciones = acciones.some(a => a.nombre === nuevoNombre);
+        if (existeEnAcciones) {
+            alert('Ya existe otra acción con ese nombre. Elige otro.');
+            return;
+        }
+
+        // Cambiar en la tabla
+        tbody.querySelectorAll(`td[data-accion="${nombreAccionEditando}"]`).forEach(c => {
+            // actualizar dataset
+            c.dataset.accion = nuevoNombre;
+            // actualizar texto solo si era el centro que mostraba el nombre
+            if (c.textContent === nombreAccionEditando) c.textContent = nuevoNombre;
+        });
+
+        // Cambiar en el array de acciones y en los botones
+        const acc = acciones.find(a => a.nombre === nombreAccionEditando);
+        if (acc) {
+            acc.nombre = nuevoNombre;
+        }
+        // Si la acción renombrada estaba seleccionada como accionActual, actualizar referencia
+        if (accionActual && accionActual.nombre === nombreAccionEditando) {
+            accionActual = acc || { nombre: nuevoNombre };
+        }
+
+        // Reconstruir UI de botones de acciones para reflejar el nuevo nombre
+        inicializarAcciones();
+
         modalEditar.style.display = 'none';
         aplicarBordes();
     });
@@ -342,21 +477,108 @@
         modalEditar.style.display = 'none';
     });
 
-    btnGenerar.addEventListener('click', () => { generarTabla(); aplicarBordes(); });
+    // --- Guardar / Cargar ---
+    btnGuardar.addEventListener('click', () => {
+        const estado = {
+            columnas: columnas,
+            acciones: acciones,
+            minutosTotales: inputMinutos.value,
+            tablaData: Array.from(tbody.rows).map(fila =>
+                Array.from(fila.cells).slice(1).map(celda => celda.dataset.accion || null)
+            )
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "diagrama-hombre-maquina.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    });
+
+    btnCargar.addEventListener('click', () => inputCargar.click());
+
+    inputCargar.addEventListener('change', (event) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const estadoCargado = JSON.parse(e.target.result);
+                columnas = estadoCargado.columnas || ['Hombre'];
+                acciones = estadoCargado.acciones || [];
+                inputMinutos.value = estadoCargado.minutosTotales || inputMinutos.value;
+
+                // Reconstruir acciones UI
+                inicializarAcciones();
+
+                // Generar tabla y repoblar
+                generarTabla();
+                const filas = tbody.rows;
+                (estadoCargado.tablaData || []).forEach((filaData, indiceFila) => {
+                    filaData.forEach((nombreAccion, indiceColumna) => {
+                        if (nombreAccion) {
+                            const accion = acciones.find(a => a.nombre === nombreAccion);
+                            const celda = filas[indiceFila].cells[indiceColumna + 1];
+                            if (accion) {
+                                celda.className = '';
+                                celda.style.backgroundColor = accion.color;
+                                celda.style.color = getContrastingTextColor(accion.color);
+                                celda.dataset.accion = accion.nombre;
+                                // texto se deja simple; al menos la central mostrará nombre si corresponde
+                            }
+                        }
+                    });
+                });
+
+                actualizarAnalisis();
+                aplicarBordes();
+            } catch (err) {
+                alert('Error al cargar el archivo: formato inválido.');
+                console.error(err);
+            }
+        };
+        if (event.target.files && event.target.files[0]) {
+            reader.readAsText(event.target.files[0]);
+        }
+        inputCargar.value = ''; // reset
+    });
+
+    // --- Botones y comportamientos ---
+    btnGenerar.addEventListener('click', generarTabla);
+    btnAgregarMaquina.addEventListener('click', agregarMaquina);
     btnCrearAccion.addEventListener('click', () => {
         const duracion = parseInt(inputDuracionAccion.value) || 1;
-        crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
+        crearNuevaAccion(inputNombreAccion.value.trim(), duracion, inputColorAccion.value);
+    });
+
+    btnModoEliminar.addEventListener('click', () => {
+        modoEliminar = !modoEliminar;
+        if (modoEliminar) {
+            btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
+            btnModoEliminar.style.backgroundColor = '#ffc107';
+            btnModoEliminar.style.color = '#000';
+            alert('Modo Eliminar Activado: Haz clic en una acción para borrarla.');
+        } else {
+            btnModoEliminar.textContent = 'Activar Modo Eliminar';
+            btnModoEliminar.style.backgroundColor = 'var(--rojo-peligro)';
+            btnModoEliminar.style.color = '#fff';
+        }
     });
 
     // --- INICIALIZACIÓN ---
-    function inicializarAcciones() {
-        crearNuevaAccion('Borrador', 1, '#6c757d', true);
-        acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
-    }
     function inicializar() {
+        // Acciones base
+        crearNuevaAccion('Trabajo', 1, '#0d6efd');
+        crearNuevaAccion('Espera', 1, '#ffc107');
+        // Reconstruir UI de botones (incluye Borrador)
         inicializarAcciones();
         generarTabla();
+        // Seleccionar primera acción real (no el borrador)
+        // divAcciones.children[0] => Borrador; children[1] => primera acción
+        if (divAcciones.children[1]) {
+            divAcciones.children[1].click();
+        }
     }
+
     inicializar();
     </script>
 </body>
