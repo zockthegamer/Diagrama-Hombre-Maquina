@@ -36,6 +36,17 @@
             margin-top: 0;
         }
 
+        .seccion { margin-bottom: 25px; padding: 20px; border: 1px solid var(--borde-color); border-radius: 5px; }
+        .control-grupo, .accion-grupo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        input[type="number"], input[type="text"], input[type="color"] { padding: 8px 12px; border: 1px solid var(--borde-color); border-radius: 4px; font-size: 1rem; }
+        input#duracionAccion { width: 80px; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; color: var(--texto-claro); font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.85; }
+        .btn-principal { background-color: var(--azul-principal); }
+        .btn-rojo { background-color: var(--rojo-peligro); }
+        .btn-secundario { background-color: var(--gris-oscuro); }
+        #acciones-disponibles { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+
         .tabla-contenedor { max-height: 600px; overflow-y: auto; border: 1px solid var(--borde-color); }
         table { width: 100%; border-collapse: collapse; text-align: center; }
         th, td { border: 1px solid var(--borde-color); padding: 5px; min-width: 80px; height: 25px; font-size: 0.9rem; }
@@ -46,15 +57,73 @@
             background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
         }
 
-        /* NUEVO: Borde negro grueso */
+        /* NUEVO: borde negro grueso */
         .borde-accion {
             border: 2px solid black !important;
+        }
+
+        /* Modal para renombrar acción */
+        #modalEditar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        #modalContenido {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        #modalContenido input {
+            padding: 8px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            width: 80%;
         }
     </style>
 </head>
 <body>
     <main>
         <h2>Diagrama Hombre-Máquina Avanzado</h2>
+
+        <div class="seccion">
+            <h3>Configuración</h3>
+            <div class="control-grupo">
+                <label for="minutos">Minutos Totales:</label>
+                <input type="number" id="minutos" value="60">
+                <button id="btnGenerar" class="btn-principal">Generar / Reiniciar</button>
+                <button id="btnAgregarMaquina" class="btn-principal">+ Máquina</button>
+            </div>
+            <div class="control-grupo">
+                 <button id="btnGuardar" class="btn-secundario">💾 Guardar Diagrama</button>
+                 <button id="btnCargar" class="btn-secundario">📂 Cargar Diagrama</button>
+                 <input type="file" id="inputCargar" accept=".json" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="seccion">
+            <h3>Acciones</h3>
+            <div class="accion-grupo">
+                <input type="text" id="nombreAccion" placeholder="Nombre de acción">
+                <input type="number" id="duracionAccion" placeholder="Min" min="1" value="1" title="Duración en minutos">
+                <input type="color" id="colorAccion" value="#4caf50">
+                <button id="btnCrearAccion" class="btn-principal">Crear Acción</button>
+                <button id="btnModoEliminar" class="btn-rojo">Activar Modo Eliminar</button>
+            </div>
+            <div id="acciones-disponibles"></div>
+        </div>
+
+        <div class="seccion">
+            <h3>Análisis de Actividad</h3>
+            <div id="analisis-container"><p>Genera la tabla para ver el análisis.</p></div>
+        </div>
+
         <div class="tabla-contenedor">
             <table id="tabla-actividades">
                 <thead></thead>
@@ -63,19 +132,55 @@
         </div>
     </main>
 
+    <!-- Modal -->
+    <div id="modalEditar">
+        <div id="modalContenido">
+            <h3>Editar nombre de la acción</h3>
+            <input type="text" id="inputNuevoNombre">
+            <br>
+            <button id="btnGuardarNombre" class="btn-principal">Guardar</button>
+            <button id="btnCancelarNombre" class="btn-rojo">Cancelar</button>
+        </div>
+    </div>
+
     <script>
+    // --- ELEMENTOS DEL DOM ---
+    const inputMinutos = document.getElementById('minutos');
+    const btnGenerar = document.getElementById('btnGenerar');
+    const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
+    const inputNombreAccion = document.getElementById('nombreAccion');
+    const inputDuracionAccion = document.getElementById('duracionAccion');
+    const inputColorAccion = document.getElementById('colorAccion');
+    const btnCrearAccion = document.getElementById('btnCrearAccion');
+    const btnModoEliminar = document.getElementById('btnModoEliminar');
+    const divAcciones = document.getElementById('acciones-disponibles');
+    const divAnalisis = document.getElementById('analisis-container');
     const tabla = document.getElementById('tabla-actividades');
     const thead = tabla.querySelector('thead');
     const tbody = tabla.querySelector('tbody');
+    const btnGuardar = document.getElementById('btnGuardar');
+    const btnCargar = document.getElementById('btnCargar');
+    const inputCargar = document.getElementById('inputCargar');
 
+    // Modal elementos
+    const modalEditar = document.getElementById('modalEditar');
+    const inputNuevoNombre = document.getElementById('inputNuevoNombre');
+    const btnGuardarNombre = document.getElementById('btnGuardarNombre');
+    const btnCancelarNombre = document.getElementById('btnCancelarNombre');
+
+    // --- ESTADO DE LA APLICACIÓN ---
     let columnas = ['Hombre'];
     let acciones = [];
     let accionActual = null;
+    let modoEliminar = false;
+    let nombreAccionEditando = null;
 
+    // --- FUNCIONES ---
     function generarTabla() {
         thead.innerHTML = '';
         tbody.innerHTML = '';
-        const minutosTotales = 10; // ejemplo reducido
+        const minutosTotales = parseInt(inputMinutos.value) || 0;
+        if (minutosTotales <= 0) return;
         const filaCabecera = document.createElement('tr');
         filaCabecera.innerHTML = `<th>Minuto</th>${columnas.map(n => `<th>${n}</th>`).join('')}`;
         thead.appendChild(filaCabecera);
@@ -84,23 +189,74 @@
             fila.innerHTML = `<td>${i}</td>${columnas.map(() => `<td class="celda-inactiva"></td>`).join('')}`;
             tbody.appendChild(fila);
         }
+        actualizarAnalisis();
     }
 
-    // Pinta un bloque de ejemplo "D-M1"
-    function pintarDemo() {
-        const filas = tbody.rows;
-        for (let i = 2; i <= 4; i++) {
-            const celda = filas[i].cells[1];
-            celda.className = '';
-            celda.style.backgroundColor = 'blue';
-            celda.style.color = 'white';
-            celda.dataset.accion = 'D-M1';
-            celda.textContent = (i === 3) ? 'D-M1' : '';
+    function actualizarAnalisis() {
+        divAnalisis.innerHTML = '';
+        const minutosTotales = parseInt(inputMinutos.value) || 0;
+        if (minutosTotales === 0) {
+            divAnalisis.innerHTML = '<p>No hay minutos para analizar.</p>';
+            return;
         }
-        aplicarBordes();
+        columnas.forEach((nombre, indiceColumna) => {
+            let celdasActivas = 0;
+            for (const fila of tbody.rows) {
+                if (!fila.cells[indiceColumna + 1].classList.contains('celda-inactiva')) {
+                    celdasActivas++;
+                }
+            }
+            const tiempoOcioso = minutosTotales - celdasActivas;
+            const porcActividad = (celdasActivas / minutosTotales) * 100;
+            const porcOcioso = (tiempoOcioso / minutosTotales) * 100;
+
+            const p = document.createElement('p');
+            p.innerHTML = `<b>${nombre}:</b> ${porcActividad.toFixed(1)}% Actividad (${celdasActivas} min) | <span style="color: #dc3545;">${porcOcioso.toFixed(1)}% Ocioso (${tiempoOcioso} min)</span>`;
+            divAnalisis.appendChild(p);
+        });
     }
 
-    // Aplica bordes al bloque entero de cada acción
+    function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) {
+        if (!nombre) {
+            alert('Por favor, introduce un nombre para la acción.');
+            return;
+        }
+        const nuevaAccion = { nombre, duracion, color };
+        if (!esHerramienta) {
+             acciones.push(nuevaAccion);
+        }
+        
+        const btnAccion = document.createElement('button');
+        btnAccion.textContent = esHerramienta ? nombre : `${nombre} (${duracion}m)`;
+        btnAccion.style.backgroundColor = color;
+        btnAccion.style.border = '2px solid transparent';
+        
+        btnAccion.addEventListener('click', () => {
+            if (modoEliminar && !esHerramienta) {
+                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"?`)) {
+                    eliminarAccion(nuevaAccion, btnAccion);
+                }
+            } else {
+                accionActual = nuevaAccion;
+                document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
+                btnAccion.style.borderColor = '#000';
+            }
+        });
+        divAcciones.appendChild(btnAccion);
+        if (!esHerramienta) {
+             inputNombreAccion.value = '';
+             inputDuracionAccion.value = '1';
+        }
+    }
+
+    function limpiarCelda(celda) {
+        celda.className = 'celda-inactiva';
+        celda.style.backgroundColor = '';
+        celda.style.color = '';
+        celda.textContent = '';
+        delete celda.dataset.accion;
+    }
+
     function aplicarBordes() {
         for (const fila of tbody.rows) {
             for (const celda of fila.cells) {
@@ -118,27 +274,90 @@
         });
     }
 
-    // Evento: editar nombre de acción al hacer click
-    tabla.addEventListener('click', (e) => {
-        const celda = e.target;
+    // --- EVENTOS ---
+    tabla.addEventListener('click', function(event) {
+        const celda = event.target;
+        if (celda.tagName !== 'TD' || celda.cellIndex === 0) return;
+
         if (celda.dataset.accion) {
-            const nombreActual = celda.dataset.accion;
-            const nuevoNombre = prompt("Cambia el nombre de la acción:", nombreActual);
-            if (nuevoNombre && nuevoNombre !== nombreActual) {
-                // Cambiar en todas las celdas del mismo bloque
-                tbody.querySelectorAll(`td[data-accion="${nombreActual}"]`).forEach(c => {
-                    c.dataset.accion = nuevoNombre;
-                    if (c.textContent === nombreActual) {
-                        c.textContent = nuevoNombre;
-                    }
-                });
-                aplicarBordes();
-            }
+            nombreAccionEditando = celda.dataset.accion;
+            inputNuevoNombre.value = nombreAccionEditando;
+            modalEditar.style.display = 'flex';
+            return;
         }
+
+        const filas = tbody.rows;
+        const indiceFila = Array.from(filas).indexOf(celda.parentElement);
+        const indiceColumna = celda.cellIndex;
+
+        if (accionActual && accionActual.nombre === 'Borrador') {
+            limpiarCelda(celda);
+            actualizarAnalisis();
+            aplicarBordes();
+            return;
+        }
+
+        if (celda.classList.contains('celda-inactiva')) {
+            if (!accionActual) {
+                alert("Por favor, selecciona una acción primero.");
+                return;
+            }
+            const duracion = accionActual.duracion || 1;
+            const middleIndex = Math.floor((duracion - 1) / 2);
+            const textColor = 'white';
+
+            for (let i = 0; i < duracion; i++) {
+                const filaIndex = indiceFila + i;
+                if (filaIndex >= filas.length) break;
+                
+                const celdaAPintar = filas[filaIndex].cells[indiceColumna];
+                celdaAPintar.className = '';
+                celdaAPintar.style.backgroundColor = accionActual.color;
+                celdaAPintar.style.color = textColor;
+                celdaAPintar.dataset.accion = accionActual.nombre;
+                celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
+            }
+        } else {
+            limpiarCelda(celda);
+        }
+        actualizarAnalisis();
+        aplicarBordes();
     });
 
-    generarTabla();
-    pintarDemo();
+    btnGuardarNombre.addEventListener('click', () => {
+        const nuevoNombre = inputNuevoNombre.value.trim();
+        if (nuevoNombre && nombreAccionEditando) {
+            tbody.querySelectorAll(`td[data-accion="${nombreAccionEditando}"]`).forEach(c => {
+                c.dataset.accion = nuevoNombre;
+                if (c.textContent === nombreAccionEditando) {
+                    c.textContent = nuevoNombre;
+                }
+            });
+        }
+        modalEditar.style.display = 'none';
+        aplicarBordes();
+    });
+
+    btnCancelarNombre.addEventListener('click', () => {
+        modalEditar.style.display = 'none';
+    });
+
+    btnGenerar.addEventListener('click', () => { generarTabla(); aplicarBordes(); });
+    btnCrearAccion.addEventListener('click', () => {
+        const duracion = parseInt(inputDuracionAccion.value) || 1;
+        crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
+    });
+
+    // --- INICIALIZACIÓN ---
+    function inicializarAcciones() {
+        crearNuevaAccion('Borrador', 1, '#6c757d', true);
+        acciones.forEach(acc => crearNuevaAccion(acc.nombre, acc.duracion, acc.color));
+    }
+    function inicializar() {
+        inicializarAcciones();
+        generarTabla();
+    }
+    inicializar();
     </script>
 </body>
 </html>
