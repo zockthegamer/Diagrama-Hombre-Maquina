@@ -55,23 +55,20 @@
         th, td { 
             border: 1px solid var(--borde-color); 
             padding: 5px; min-width: 80px; height: 25px; font-size: 0.9rem; 
-            /* Importante: Cada celda tiene su propio borde normal */
         }
-        /* NUEVO: Borde negro solo cuando la celda tiene una acción */
         td[data-accion] { 
             font-weight: bold; font-size: 0.8em; vertical-align: middle; 
-            border: 1px solid #000; /* Borde negro para celdas con acción */
+            border: 1px solid #000;
         }
-
         thead th { position: sticky; top: 0; background-color: #e9ecef; }
         tbody td:first-child { font-weight: bold; background-color: var(--fondo-gris); }
         td { cursor: pointer; }
         .celda-inactiva {
             background-image: repeating-linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1) 8px, transparent 8px, transparent 16px);
-            border: 1px solid var(--borde-color); /* Borde normal para celdas inactivas */
+            border: 1px solid var(--borde-color);
         }
 
-        /* --- NUEVO: ESTILOS PARA EL TOOLTIP --- */
+        /* --- TOOLTIP --- */
         #tooltip {
             position: absolute;
             visibility: hidden;
@@ -154,7 +151,7 @@
 
     // --- ESTADO DE LA APLICACIÓN ---
     let columnas = ['Hombre'];
-    let acciones = []; // Array de objetos {nombre, duracion, color}
+    let acciones = [];
     let accionActual = null;
     let modoEliminar = false;
 
@@ -199,47 +196,49 @@
             divAnalisis.appendChild(p);
         });
     }
-    
-    // CAMBIO: Al crear acción, el botón guarda una referencia a la acción.
-    function crearNuevaAccion(nombre, duracion, color, esHerramienta = false) {
-        if (!nombre && !esHerramienta) {
-            alert('Por favor, introduce un nombre para la acción.');
-            return;
-        }
-        // Verificar si ya existe una acción con ese nombre (ignorar Borrador)
-        if (!esHerramienta && acciones.some(a => a.nombre === nombre)) {
-            alert(`Ya existe una acción con el nombre "${nombre}".`);
-            return;
-        }
 
-        const nuevaAccion = { nombre, duracion, color, id: Date.now() }; // Añadir un ID único
-        if (!esHerramienta) {
-             acciones.push(nuevaAccion);
-        }
-        
+    // CORRECCIÓN: Dos funciones separadas. Una para añadir la acción al estado y otra para crear el botón en la UI.
+    
+    // Función que SOLO crea el botón en la UI a partir de un objeto de acción
+    function _crearBotonAccionUI(accion) {
+        const esHerramienta = !accion.hasOwnProperty('duracion'); // Borrador no tiene duración
         const btnAccion = document.createElement('button');
-        btnAccion.textContent = esHerramienta ? nombre : `${nombre} (${duracion}m)`;
-        btnAccion.style.backgroundColor = color;
+        btnAccion.textContent = esHerramienta ? accion.nombre : `${accion.nombre} (${accion.duracion}m)`;
+        btnAccion.style.backgroundColor = accion.color;
         btnAccion.style.border = '2px solid transparent';
-        btnAccion.dataset.actionId = nuevaAccion.id; // Guarda el ID de la acción en el botón
+        btnAccion.dataset.actionId = accion.id;
         
         btnAccion.addEventListener('click', () => {
             if (modoEliminar && !esHerramienta) {
-                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${nuevaAccion.nombre}"?`)) {
-                    eliminarAccion(nuevaAccion.id); // Eliminar por ID
+                if (confirm(`¿Estás seguro de que quieres eliminar la acción "${accion.nombre}"?`)) {
+                    eliminarAccion(accion.id);
                 }
             } else {
-                accionActual = nuevaAccion;
+                accionActual = accion;
                 document.querySelectorAll('#acciones-disponibles button').forEach(btn => btn.style.borderColor = 'transparent');
                 btnAccion.style.borderColor = '#000';
             }
         });
         divAcciones.appendChild(btnAccion);
-        if (!esHerramienta) {
-             inputNombreAccion.value = '';
-             inputDuracionAccion.value = '1';
+    }
+    
+    // Función que se llama al hacer clic en "Crear Acción". Añade la acción al estado y luego crea el botón.
+    function crearNuevaAccion(nombre, duracion, color) {
+        if (!nombre) {
+            alert('Por favor, introduce un nombre para la acción.');
+            return;
         }
-        return nuevaAccion; // Devuelve la acción creada
+        if (acciones.some(a => a.nombre === nombre)) {
+            alert(`Ya existe una acción con el nombre "${nombre}".`);
+            return;
+        }
+
+        const nuevaAccion = { nombre, duracion, color, id: Date.now() };
+        acciones.push(nuevaAccion);
+        _crearBotonAccionUI(nuevaAccion); // Llama a la función que crea el botón
+        
+        inputNombreAccion.value = '';
+        inputDuracionAccion.value = '1';
     }
 
     function agregarMaquina() { 
@@ -252,28 +251,20 @@
         }
     }
     
-    // CAMBIO: Eliminar acción por ID y limpiar tabla.
     function eliminarAccion(actionId) { 
         const accionAEliminar = acciones.find(a => a.id === actionId);
         if (!accionAEliminar) return;
 
-        // Limpiar celdas en la tabla
         for (const fila of tbody.rows) {
             for (const celda of fila.cells) {
-                if (celda.dataset.actionId === String(actionId)) { // Comparar con String
+                if (celda.dataset.actionId === String(actionId)) {
                     limpiarCelda(celda);
                 }
             }
         }
-
-        // Quitar la acción del array de acciones
         acciones = acciones.filter(a => a.id !== actionId);
-
-        // Quitar el botón de la UI
         const botonAEliminar = divAcciones.querySelector(`button[data-action-id="${actionId}"]`);
         if (botonAEliminar) botonAEliminar.remove();
-
-        // Si la acción eliminada era la actual, deseleccionarla
         if (accionActual && accionActual.id === actionId) {
             accionActual = null;
         }
@@ -294,8 +285,8 @@
         celda.style.backgroundColor = '';
         celda.style.color = '';
         celda.textContent = '';
-        delete celda.dataset.actionId; // Eliminar el ID de la acción
-        delete celda.dataset.accion; // Eliminar el nombre de la acción (por si acaso)
+        delete celda.dataset.actionId;
+        delete celda.dataset.accion;
     }
 
     // --- MANEJADORES DE EVENTOS ---
@@ -308,50 +299,41 @@
         const indiceFila = Array.from(filas).indexOf(celda.parentElement);
         const indiceColumna = celda.cellIndex;
 
-        // NUEVO: Lógica para editar el nombre de la acción al hacer clic en una celda ya pintada
         if (!celda.classList.contains('celda-inactiva') && !modoEliminar) {
             const currentActionName = celda.dataset.accion;
             const actionId = parseInt(celda.dataset.actionId);
             const accionEnCelda = acciones.find(a => a.id === actionId);
 
             if (accionEnCelda) {
-                const nuevoNombre = prompt(`¿Cambiar el nombre de la acción "${currentActionName}"? Introduce el nuevo nombre:`, currentActionName);
-                if (nuevoNombre !== null && nuevoNombre.trim() !== '' && nuevoNombre !== currentActionName) {
-                    // Actualizar el objeto de acción
+                const nuevoNombre = prompt(`Cambiar nombre de la acción:\n\n"${currentActionName}"`, currentActionName);
+                if (nuevoNombre && nuevoNombre.trim() !== '' && nuevoNombre !== currentActionName) {
+                    if (acciones.some(a => a.nombre === nuevoNombre.trim())) {
+                        alert(`El nombre "${nuevoNombre.trim()}" ya está en uso por otra acción.`);
+                        return;
+                    }
                     accionEnCelda.nombre = nuevoNombre.trim();
-                    
-                    // Actualizar todas las celdas que usan esta acción
                     for (const fila of tbody.rows) {
                         for (const c of fila.cells) {
                             if (c.dataset.actionId === String(actionId)) {
                                 c.dataset.accion = nuevoNombre.trim();
-                                if (c.textContent === currentActionName) { // Solo si el texto es el nombre original
-                                    c.textContent = nuevoNombre.trim();
-                                }
+                                if (c.textContent) c.textContent = nuevoNombre.trim();
                             }
                         }
                     }
-
-                    // Actualizar el texto del botón
                     const btn = divAcciones.querySelector(`button[data-action-id="${actionId}"]`);
-                    if (btn) {
-                        btn.textContent = `${nuevoNombre.trim()} (${accionEnCelda.duracion}m)`;
-                    }
+                    if (btn) btn.textContent = `${nuevoNombre.trim()} (${accionEnCelda.duracion}m)`;
                     actualizarAnalisis();
                 }
             }
-            return; // No continuar con la lógica de pintar/borrar si estamos editando
+            return;
         }
 
-
-        // Lógica del Borrador
         if (accionActual && accionActual.nombre === 'Borrador') {
             limpiarCelda(celda);
             actualizarAnalisis();
             return;
         }
 
-        // Lógica para pintar o limpiar
         if (celda.classList.contains('celda-inactiva')) {
             if (!accionActual) {
                 alert("Por favor, selecciona una acción primero.");
@@ -366,16 +348,14 @@
                 if (filaIndex >= filas.length) break;
                 
                 const celdaAPintar = filas[filaIndex].cells[indiceColumna];
-                // CAMBIO: Antes de pintar, limpiar la celda si ya tiene otra acción
                 if (!celdaAPintar.classList.contains('celda-inactiva')) {
                     limpiarCelda(celdaAPintar); 
                 }
-
-                celdaAPintar.className = ''; // Elimina 'celda-inactiva'
+                celdaAPintar.className = '';
                 celdaAPintar.style.backgroundColor = accionActual.color;
                 celdaAPintar.style.color = textColor;
                 celdaAPintar.dataset.accion = accionActual.nombre;
-                celdaAPintar.dataset.actionId = accionActual.id; // Guarda el ID en la celda
+                celdaAPintar.dataset.actionId = accionActual.id;
                 celdaAPintar.textContent = (i === middleIndex) ? accionActual.nombre : '';
             }
         } else {
@@ -384,8 +364,7 @@
         actualizarAnalisis();
     });
 
-    // Eventos para el tooltip
-    tabla.addEventListener('mouseover', (event) => {
+    tabla.addEventListener('mouseover', (event) => { /* ... (Sin cambios) ... */
         if (event.target.tagName === 'TD' && event.target.dataset.accion) {
             tooltip.textContent = event.target.dataset.accion;
             tooltip.style.left = `${event.pageX + 10}px`;
@@ -394,20 +373,19 @@
             tooltip.style.opacity = 1;
         }
     });
-    tabla.addEventListener('mouseout', () => {
+    tabla.addEventListener('mouseout', () => { /* ... (Sin cambios) ... */
         tooltip.style.visibility = 'hidden';
         tooltip.style.opacity = 0;
     });
 
     btnGenerar.addEventListener('click', generarTabla);
     btnAgregarMaquina.addEventListener('click', agregarMaquina);
-    
     btnCrearAccion.addEventListener('click', () => {
         const duracion = parseInt(inputDuracionAccion.value) || 1;
-        crearNuevaAccion(inputNombreAccion.value, duracion, inputColorAccion.value);
+        crearNuevaAccion(inputNombreAccion.value.trim(), duracion, inputColorAccion.value);
     });
 
-    btnModoEliminar.addEventListener('click', () => { 
+    btnModoEliminar.addEventListener('click', () => { /* ... (Sin cambios) ... */
         modoEliminar = !modoEliminar;
         if (modoEliminar) {
             btnModoEliminar.textContent = 'Modo Eliminar ACTIVADO';
@@ -421,17 +399,13 @@
         }
     });
 
-    // Lógica para Guardar y Cargar
-    btnGuardar.addEventListener('click', () => {
+    btnGuardar.addEventListener('click', () => { /* ... (Sin cambios) ... */
         const estado = {
             columnas: columnas,
-            acciones: acciones, // Ahora guardamos los IDs y otros datos de la acción
+            acciones: acciones,
             minutosTotales: inputMinutos.value,
             tablaData: Array.from(tbody.rows).map(fila => 
-                Array.from(fila.cells).slice(1).map(celda => ({
-                    actionId: celda.dataset.actionId || null, // Guardar el ID
-                    accionName: celda.dataset.accion || null // También el nombre por referencia rápida
-                }))
+                Array.from(fila.cells).slice(1).map(celda => celda.dataset.actionId || null)
             )
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estado, null, 2));
@@ -442,15 +416,42 @@
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     });
-
     btnCargar.addEventListener('click', () => inputCargar.click());
-
-    inputCargar.addEventListener('change', (event) => {
+    inputCargar.addEventListener('change', (event) => { /* ... (Código de carga modificado para usar la nueva estructura) ... */
         const reader = new FileReader();
         reader.onload = (e) => {
             const estadoCargado = JSON.parse(e.target.result);
-            
-            // Recargar estado
             columnas = estadoCargado.columnas;
-            acciones = estadoCargado.acciones || []; // Asegurarse de que sea un array
-            inputMinutos.value = estadoCargado.minutos
+            acciones = estadoCargado.acciones || [];
+            inputMinutos.value = estadoCargado.minutosTotales;
+
+            divAcciones.innerHTML = '';
+            inicializarAccionesUI();
+            generarTabla();
+            const filas = tbody.rows;
+
+            estadoCargado.tablaData.forEach((filaData, indiceFila) => {
+                filaData.forEach((actionId, indiceColumna) => {
+                    if (actionId) {
+                        const accion = acciones.find(a => a.id === parseInt(actionId));
+                        if (accion) {
+                            const celda = filas[indiceFila].cells[indiceColumna + 1];
+                            celda.className = '';
+                            celda.style.backgroundColor = accion.color;
+                            celda.style.color = getContrastingTextColor(accion.color);
+                            celda.dataset.accion = accion.nombre;
+                            celda.dataset.actionId = accion.id;
+                        }
+                    }
+                });
+            });
+            reponerNombresEnBloques();
+            actualizarAnalisis();
+        };
+        reader.readAsText(event.target.files[0]);
+        inputCargar.value = '';
+    });
+
+    function reponerNombresEnBloques() { /* ... (Función de ayuda para la carga, sin cambios) ... */
+        columnas.forEach((_, colIndex) => {
+            for (let 
