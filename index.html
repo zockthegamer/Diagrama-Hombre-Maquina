@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Diagrama Hombre-Máquina — Avanzado (Intervalo 0.5 min)</title>
+<title>Diagrama Hombre-Máquina — Avanzado (Corregido)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 <style>
@@ -457,7 +457,7 @@ document.addEventListener('mouseup', (e) => {
 
 thead.addEventListener('click', (e) => {
   const th = e.target;
-  if (th.tagName !== 'TH') return;
+  if (th.tagName !== 'TH' || th.cellIndex === 0) return;
 
   const nombreActual = th.textContent;
   const nuevoNombre = prompt('Editar nombre de la columna:', nombreActual);
@@ -465,13 +465,8 @@ thead.addEventListener('click', (e) => {
   if (nuevoNombre && nuevoNombre.trim() !== '') {
     const nombreRecortado = nuevoNombre.trim();
     th.textContent = nombreRecortado;
-
-    if (th.cellIndex === 0) {
-      primerEncabezado = nombreRecortado;
-    } else {
-      columnas[th.cellIndex - 1] = nombreRecortado;
-      actualizarAnalisis();
-    }
+    columnas[th.cellIndex - 1] = nombreRecortado;
+    actualizarAnalisis();
     saveHistory();
   }
 });
@@ -544,11 +539,22 @@ btnCrearAccion.onclick = ()=>{
 }
 
 /* ---------- agregar maquina ---------- */
+// ***** CORREGIDO *****
 btnAgregarMaquina.onclick = ()=>{
   const nombreNuevaMaquina = `M${columnas.length}`;
   columnas.push(nombreNuevaMaquina);
-  generarTabla(true); 
-  loadState(JSON.parse(historyStack[historyStack.length-1]), true)
+
+  const th = document.createElement('th');
+  th.textContent = nombreNuevaMaquina;
+  thead.querySelector('tr').appendChild(th);
+
+  tbody.querySelectorAll('tr').forEach(fila => {
+    const td = document.createElement('td');
+    td.className = 'celda-inactiva';
+    fila.appendChild(td);
+  });
+
+  actualizarAnalisis();
   saveHistory();
 }
 
@@ -626,7 +632,6 @@ btnSplit.onclick = ()=>{
   firstHalf.forEach(cell => cell.dataset.blockId = newBlockId1);
   secondHalf.forEach(cell => cell.dataset.blockId = newBlockId2);
   
-  // Actualizar el texto del nombre en los nuevos bloques
   const mid1 = Math.floor((firstHalf.length - 1) / 2);
   firstHalf.forEach((c, i) => c.textContent = (i === mid1) ? c.dataset.accion : '');
   
